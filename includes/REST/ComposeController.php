@@ -7,8 +7,6 @@ namespace Kratt\REST;
 use Kratt\AI\Client;
 use Kratt\Catalog\BlockCatalog;
 use WP_REST_Controller;
-use WP_REST_Request;
-use WP_REST_Response;
 use WP_REST_Server;
 
 class ComposeController extends WP_REST_Controller {
@@ -46,14 +44,14 @@ class ComposeController extends WP_REST_Controller {
 		);
 	}
 
-	public function create_item_permissions_check( WP_REST_Request $request ): bool|\WP_Error {
+	public function create_item_permissions_check( $request ) {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to use Kratt.', 'kratt' ), [ 'status' => 403 ] );
 		}
 		return true;
 	}
 
-	public function create_item( WP_REST_Request $request ): WP_REST_Response|\WP_Error {
+	public function create_item( $request ) {
 		$prompt         = $request->get_param( 'prompt' );
 		$editor_content = $request->get_param( 'editor_content' );
 		$allowed_blocks = $request->get_param( 'allowed_blocks' );

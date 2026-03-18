@@ -39,15 +39,16 @@ class BlockCatalog {
 				continue;
 			}
 
-			// Custom / third-party blocks: build from registry.
+			// Non-curated blocks: derive source from namespace.
 			$catalog[ $name ] = [
 				'name'        => $name,
-				'source'      => 'custom',
+				'source'      => str_starts_with( $name, 'core/' ) ? 'core' : 'custom',
 				'enabled'     => true,
 				'title'       => $block_type->title ?? $name,
 				'description' => $block_type->description ?? '',
 				'keywords'    => $block_type->keywords ?? [],
 				'hint'        => '',
+				'dynamic'     => $block_type->is_dynamic(),
 				'attributes'  => self::extract_attributes( $block_type ),
 				'example'     => $block_type->example ?? [],
 			];
@@ -89,8 +90,15 @@ class BlockCatalog {
 				continue;
 			}
 
-			$source = $block['source'] === 'custom' ? ' [CUSTOM]' : '';
-			$line   = sprintf( '- %s (%s)%s: %s', $name, $block['title'] ?? $name, $source, $block['description'] ?? '' );
+			$tags = [];
+			if ( $block['source'] === 'custom' ) {
+				$tags[] = 'CUSTOM';
+			}
+			if ( ! empty( $block['dynamic'] ) ) {
+				$tags[] = 'DYNAMIC';
+			}
+			$tag_str = $tags ? ' [' . implode( ', ', $tags ) . ']' : '';
+			$line    = sprintf( '- %s (%s)%s: %s', $name, $block['title'] ?? $name, $tag_str, $block['description'] ?? '' );
 
 			if ( ! empty( $block['hint'] ) ) {
 				$line .= "\n  Hint: " . $block['hint'];

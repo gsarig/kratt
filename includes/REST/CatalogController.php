@@ -7,8 +7,6 @@ namespace Kratt\REST;
 use Kratt\Catalog\BlockCatalog;
 use Kratt\Settings\Settings;
 use WP_REST_Controller;
-use WP_REST_Request;
-use WP_REST_Response;
 use WP_REST_Server;
 
 class CatalogController extends WP_REST_Controller {
@@ -38,21 +36,21 @@ class CatalogController extends WP_REST_Controller {
 		);
 	}
 
-	public function permissions_check( WP_REST_Request $request ): bool|\WP_Error {
+	public function permissions_check( $request ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to manage the Kratt catalog.', 'kratt' ), [ 'status' => 403 ] );
 		}
 		return true;
 	}
 
-	public function get_items( WP_REST_Request $request ): WP_REST_Response {
+	public function get_items( $request ) {
 		return rest_ensure_response( [
 			'blocks'     => BlockCatalog::get(),
 			'scanned_at' => Settings::get_catalog_scanned_at(),
 		] );
 	}
 
-	public function rescan( WP_REST_Request $request ): WP_REST_Response {
+	public function rescan( $request ) {
 		BlockCatalog::scan();
 		$catalog = BlockCatalog::get();
 

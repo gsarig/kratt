@@ -1,8 +1,20 @@
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar } from '@wordpress/editor';
+
+const KrattIcon = (
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+		<rect x="7" y="11" width="10" height="9" rx="1" />
+		<path d="M9 11V8a3 3 0 0 1 6 0v3" />
+		<circle cx="10" cy="15" r="1" fill="currentColor" stroke="none" />
+		<circle cx="14" cy="15" r="1" fill="currentColor" stroke="none" />
+		<path d="M10 19h4" />
+		<path d="M12 5v2" />
+		<path d="M5 14h2M17 14h2" />
+	</svg>
+);
 import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { parse, serialize } from '@wordpress/blocks';
+import { createBlock, serialize } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
@@ -71,17 +83,17 @@ function KrattSidebar() {
 				return;
 			}
 
-			if ( ! response.markup ) {
+			if ( ! Array.isArray( response.blocks ) || ! response.blocks.length ) {
 				addMessage( 'assistant', 'No blocks were returned.', true );
 				return;
 			}
 
-			const parsedBlocks = parse( response.markup );
-
-			if ( ! parsedBlocks.length ) {
-				addMessage( 'assistant', 'The response could not be parsed into valid blocks.', true );
-				return;
+			function buildBlock( spec ) {
+				const inner = ( spec.innerBlocks || [] ).map( buildBlock );
+				return createBlock( spec.name, spec.attributes || {}, inner );
 			}
+
+			const parsedBlocks = response.blocks.map( buildBlock );
 
 			const { index, rootClientId } = getInsertionPoint();
 			insertBlocks( parsedBlocks, index, rootClientId );
@@ -104,8 +116,33 @@ function KrattSidebar() {
 		}
 	}
 
+	const recentMessages = messages.slice( -2 );
+	const olderMessages = messages.slice( 0, -2 );
+
+	function renderMessage( message, i ) {
+		return (
+			<div
+				key={ i }
+				className={ [
+					'kratt-message',
+					`kratt-message--${ message.role }`,
+					message.isError ? 'kratt-message--error' : '',
+				]
+					.filter( Boolean )
+					.join( ' ' ) }
+			>
+				<p>{ message.content }</p>
+				{ message.suggestion && (
+					<p className="kratt-message__suggestion">
+						{ message.suggestion }
+					</p>
+				) }
+			</div>
+		);
+	}
+
 	return (
-		<PluginSidebar name="kratt-sidebar" title="Kratt" icon="admin-generic">
+		<PluginSidebar name="kratt-sidebar" title="Kratt" icon={ KrattIcon }>
 			<div className="kratt-sidebar">
 				<div className="kratt-messages">
 					{ messages.length === 0 && (
@@ -115,25 +152,17 @@ function KrattSidebar() {
 							<em>Example: "Add a hero, then an FAQ section."</em>
 						</p>
 					) }
-					{ messages.map( ( message, i ) => (
-						<div
-							key={ i }
-							className={ [
-								'kratt-message',
-								`kratt-message--${ message.role }`,
-								message.isError ? 'kratt-message--error' : '',
-							]
-								.filter( Boolean )
-								.join( ' ' ) }
-						>
-							<p>{ message.content }</p>
-							{ message.suggestion && (
-								<p className="kratt-message__suggestion">
-									{ message.suggestion }
-								</p>
-							) }
-						</div>
-					) ) }
+					{ olderMessages.length > 0 && (
+						<details className="kratt-history">
+							<summary className="kratt-history__toggle">
+								{ olderMessages.length } previous { olderMessages.length === 1 ? 'message' : 'messages' }
+							</summary>
+							<div className="kratt-history__messages">
+								{ olderMessages.map( renderMessage ) }
+							</div>
+						</details>
+					) }
+					{ recentMessages.map( renderMessage ) }
 					{ isLoading && (
 						<div className="kratt-loading">
 							<Spinner />
