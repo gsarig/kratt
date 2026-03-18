@@ -1,0 +1,210 @@
+# Kratt
+
+A WordPress AI block composer. Describe the content you want and Kratt inserts the right blocks, without requiring you to know block names or navigate the inserter.
+
+---
+
+## How it works
+
+Kratt adds a sidebar panel to the Block Editor. Type a plain-language description of what you want to build, and Kratt sends it to the AI along with a catalog of every block available on your site. The AI returns a structured block specification; Kratt turns that into real blocks and inserts them at the cursor position.
+
+The catalog is built from the WordPress block registry at activation time. It tells the AI exactly which blocks exist on your site, what they do, and which attributes are safe to populate. Core blocks use hand-curated descriptions for accuracy; theme and plugin blocks are detected automatically from the registry.
+
+---
+
+## Features
+
+- **Natural language composition** — describe layouts, sections, or single blocks in plain English
+- **Aware of all site blocks** — catalog is built from the live block registry, including theme and plugin blocks
+- **Cursor-aware insertion** — blocks are inserted after the currently selected block, or at the end of the document
+- **Nested block support** — containers (columns, groups, covers) are assembled with their inner blocks intact
+- **Context-aware prompting** — the current editor content is sent as read-only context, so the AI knows what's already there
+- **Allowed blocks respected** — if the editor or post type restricts which blocks can be used, the AI only picks from that subset
+- **Collapsible message history** — recent messages are always visible; older ones are grouped under a toggle
+- **Test mode** — a `KRATT_TEST_MODE` constant lets you develop and style without burning API tokens
+
+---
+
+## Requirements
+
+- WordPress 7.0 or later
+- PHP 8.1 or later
+- An AI provider plugin (see [Installation](#installation))
+
+---
+
+## Installation
+
+### 1. Install Kratt
+
+Upload the plugin folder to `wp-content/plugins/` and activate it via **Plugins → Installed Plugins**.
+
+### 2. Install an AI provider plugin
+
+Kratt uses the WP AI Client, which is part of WordPress 7.0. To provide an actual AI model, you need a provider plugin. Available options:
+
+- [AI Provider for Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic/)
+- AI Provider for Google (coming soon)
+- AI Provider for OpenAI (coming soon)
+
+Install and activate one of these.
+
+### 3. Add your API key
+
+Each provider plugin expects your API key as a PHP constant in `wp-config.php`. For Anthropic:
+
+```php
+define( 'ANTHROPIC_API_KEY', 'sk-ant-...' );
+```
+
+The provider plugin will pick this up automatically. No admin UI is needed.
+
+### 4. Verify
+
+After activation, open any post or page in the Block Editor. You should see a **Kratt** panel in the sidebar (the robot icon in the top toolbar). If you see an error notice instead, check that a provider plugin is active and the API key is set.
+
+---
+
+## Usage
+
+Open a post or page in the Block Editor and click the Kratt icon in the top toolbar to open the sidebar.
+
+Type what you want to build in the text area and press **Enter** (or click **Generate**). Examples:
+
+- *"Add a hero section with a heading and a call-to-action button"*
+- *"Create an FAQ with three questions about shipping"*
+- *"Add a two-column layout with an image on the left and text on the right"*
+- *"Insert the OpenStreetMap block"*
+
+Kratt inserts the generated blocks after the currently selected block. If nothing is selected, blocks are added at the end of the document.
+
+Shift+Enter adds a new line in the text area without submitting.
+
+---
+
+## Settings
+
+Go to **Settings → Kratt** to see the block catalog and manage it.
+
+### Block catalog
+
+The catalog is the list of blocks Kratt knows about. It is built from the live WordPress block registry and stored in the database. The settings page shows:
+
+- **Custom blocks** — blocks registered by themes or plugins, listed first
+- **Core blocks** — all standard WordPress blocks, collapsed by default to keep the page manageable
+
+Each entry shows the block's title, slug (e.g. `core/paragraph`), and description.
+
+### Rescanning
+
+The catalog is built automatically when Kratt is activated, and again whenever a plugin or theme is activated or switched. You can also trigger a manual rescan at any time by clicking **Rescan Blocks** on the settings page. This is useful after installing a new block plugin without deactivating and reactivating it.
+
+---
+
+## Constants
+
+These PHP constants can be defined in `wp-config.php` to configure Kratt's behaviour.
+
+### `ANTHROPIC_API_KEY`
+
+Not a Kratt constant; it belongs to the AI provider plugin. It tells the provider which API key to use.
+
+```php
+define( 'ANTHROPIC_API_KEY', 'sk-ant-...' );
+```
+
+### `KRATT_TEST_MODE`
+
+When set to `true`, Kratt skips the AI call entirely and returns a dummy response instead. Useful during theme development or UI work when you do not want to spend API credits.
+
+```php
+define( 'KRATT_TEST_MODE', true );
+```
+
+The dummy response always inserts a heading and a paragraph so you can verify that the sidebar, styling, and block insertion work correctly.
+
+---
+
+## FAQ
+
+**Does Kratt store my content or send it to a third party?**
+
+Kratt sends your prompt and a summary of the current editor content to the AI provider you have configured (e.g. Anthropic). What the provider does with that data is governed by their terms of service. Kratt itself stores nothing beyond the block catalog in your WordPress database.
+
+**Can it create any block, or only the ones it knows about?**
+
+Only blocks in the catalog. The AI is instructed never to invent block names, and if it cannot fulfil a request with the available blocks it returns an error with a suggestion of what to try instead.
+
+**Why does my custom block appear in the catalog but produce an empty result?**
+
+The AI fills in attributes it can generate with confidence: heading text, paragraph content, button labels. For everything else (media IDs, coordinate pairs, complex objects), it intentionally leaves attributes empty and lets WordPress use the block's registered defaults. An empty but valid block is always preferable to a block with invented attribute values that fail validation.
+
+**The catalog is out of date after I installed a new plugin. What do I do?**
+
+Click **Rescan Blocks** on the Settings → Kratt page. The catalog is also rebuilt automatically when any plugin or theme is activated.
+
+**Can I restrict which blocks the AI can use?**
+
+Not directly via Kratt. However, if your post type or editor setup restricts `allowedBlockTypes`, Kratt reads that setting and passes only the permitted blocks to the AI. Blocks outside that list will not be suggested.
+
+**Where do I set the AI model or temperature?**
+
+Those settings are controlled by the provider plugin, not Kratt. Kratt simply calls `wp_ai_client_prompt()` and lets the provider handle model selection and generation parameters.
+
+---
+
+## REST API
+
+Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).
+
+### `POST /wp-json/kratt/v1/compose`
+
+Generates blocks from a natural language prompt.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `prompt` | string | yes | The user's natural language instruction |
+| `editor_content` | string | no | Serialized current editor content (read-only context) |
+| `allowed_blocks` | string[] | no | List of block slugs permitted in the editor |
+
+**Success response:**
+
+```json
+{
+  "blocks": [
+    { "name": "core/heading", "attributes": { "level": 2, "content": "Hello" } },
+    { "name": "core/paragraph", "attributes": { "content": "World." } }
+  ]
+}
+```
+
+**Error response:**
+
+```json
+{
+  "error": "No suitable block exists for that request.",
+  "suggestion": "Try describing the content differently, or use a core/group to assemble it manually."
+}
+```
+
+### `GET /wp-json/kratt/v1/catalog`
+
+Returns the stored block catalog as JSON.
+
+### `POST /wp-json/kratt/v1/catalog/rescan`
+
+Triggers a rescan of the block registry and saves the result. Returns a message with the new block count.
+
+---
+
+## Abilities API
+
+Kratt registers a `kratt/insert-block` ability via the WordPress Abilities API on the `wp_abilities_api_init` hook. This makes Kratt's block insertion capability discoverable by other plugins and by future WordPress tooling that queries what AI-related actions a site supports.
+
+---
+
+## Name
+
+Kratt is a household spirit from Estonian and Finnish mythology, a helpful creature that fetches things and does work on your behalf, unseen. It seemed fitting.

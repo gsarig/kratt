@@ -16,6 +16,10 @@ class Client {
 			return [ 'error' => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ) ];
 		}
 
+		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
+			return self::dummy_response( $user_prompt );
+		}
+
 		$system_prompt = PromptBuilder::build( $catalog, $editor_content );
 
 		$response = wp_ai_client_prompt( $user_prompt )
@@ -37,5 +41,25 @@ class Client {
 		}
 
 		return $decoded;
+	}
+
+	private static function dummy_response( string $prompt ): array {
+		return [
+			'blocks' => [
+				[
+					'name'       => 'core/heading',
+					'attributes' => [
+						'level'   => 2,
+						'content' => 'Test mode: "' . $prompt . '"',
+					],
+				],
+				[
+					'name'       => 'core/paragraph',
+					'attributes' => [
+						'content' => 'This is a dummy response from Kratt test mode. No tokens were used.',
+					],
+				],
+			],
+		];
 	}
 }

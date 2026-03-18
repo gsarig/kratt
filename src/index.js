@@ -1,3 +1,4 @@
+import './index.css';
 import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar } from '@wordpress/editor';
 
