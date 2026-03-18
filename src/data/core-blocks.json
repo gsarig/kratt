@@ -1,0 +1,457 @@
+{
+  "core/paragraph": {
+    "title": "Paragraph",
+    "description": "Basic text block for body content.",
+    "keywords": ["text", "body", "content", "plain text", "prose", "copy"],
+    "hint": "Use for any body text, descriptions, or prose. The default block for written content.",
+    "attributes": {
+      "content": { "type": "string", "description": "The paragraph text. Supports inline HTML." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "dropCap": { "type": "boolean", "description": "Renders the first letter as a large drop cap." },
+      "placeholder": { "type": "string", "description": "Placeholder text shown when block is empty." },
+      "direction": { "type": "string", "enum": ["ltr", "rtl"], "description": "Text direction." }
+    },
+    "example": {
+      "content": "This is a sample paragraph with some text content."
+    }
+  },
+  "core/heading": {
+    "title": "Heading",
+    "description": "Introduces content with a hierarchical heading (H1–H6).",
+    "keywords": ["title", "h1", "h2", "h3", "h4", "h5", "h6", "subtitle", "section title", "headline"],
+    "hint": "Use for section titles and hierarchical headings. Default level is H2. Use H1 for page titles, H2–H3 for sections, H4–H6 for sub-sections.",
+    "attributes": {
+      "content": { "type": "string", "description": "The heading text. Supports inline HTML." },
+      "level": { "type": "integer", "enum": [1, 2, 3, 4, 5, 6], "description": "Heading level (1–6). Defaults to 2." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "placeholder": { "type": "string", "description": "Placeholder text shown when block is empty." }
+    },
+    "example": {
+      "content": "Welcome to Our Site",
+      "level": 2
+    }
+  },
+  "core/image": {
+    "title": "Image",
+    "description": "Inserts an image with optional caption, alt text, and link.",
+    "keywords": ["photo", "picture", "img", "figure", "illustration", "graphic"],
+    "hint": "Use for single images. For multiple images in a grid, use core/gallery instead. Set alt text for accessibility.",
+    "attributes": {
+      "url": { "type": "string", "description": "The image source URL." },
+      "alt": { "type": "string", "description": "Alternative text for accessibility." },
+      "caption": { "type": "string", "description": "Caption displayed below the image." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "width": { "type": "integer", "description": "Image width in pixels." },
+      "height": { "type": "integer", "description": "Image height in pixels." },
+      "linkDestination": { "type": "string", "enum": ["none", "media", "attachment", "custom"], "description": "Where clicking the image navigates." },
+      "href": { "type": "string", "description": "URL when linkDestination is 'custom'." },
+      "sizeSlug": { "type": "string", "enum": ["thumbnail", "medium", "large", "full"], "description": "Registered image size slug." }
+    },
+    "example": {
+      "url": "https://example.com/image.jpg",
+      "alt": "A descriptive alt text",
+      "caption": "An optional caption for the image."
+    }
+  },
+  "core/gallery": {
+    "title": "Gallery",
+    "description": "Displays multiple images in a responsive grid layout.",
+    "keywords": ["photos", "pictures", "images", "grid", "album", "mosaic"],
+    "hint": "Use when the user wants to show multiple images together in a grid. Each image inside should be a core/image block.",
+    "attributes": {
+      "columns": { "type": "integer", "description": "Number of columns in the gallery grid (1–8)." },
+      "imageCrop": { "type": "boolean", "description": "Whether to crop images to the same height." },
+      "linkTo": { "type": "string", "enum": ["none", "media", "attachment"], "description": "Where gallery images link." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "caption": { "type": "string", "description": "Caption for the entire gallery." }
+    },
+    "example": {
+      "columns": 3,
+      "imageCrop": true
+    }
+  },
+  "core/list": {
+    "title": "List",
+    "description": "An ordered or unordered list of items.",
+    "keywords": ["ul", "ol", "bullet", "numbered", "items", "enumeration"],
+    "hint": "Use for bullet points (unordered) or numbered lists (ordered). Each list item must be a core/list-item block.",
+    "attributes": {
+      "ordered": { "type": "boolean", "description": "True for a numbered list (ol), false for bullet list (ul)." },
+      "start": { "type": "integer", "description": "The starting number for ordered lists." },
+      "reversed": { "type": "boolean", "description": "Whether an ordered list counts down instead of up." },
+      "type": { "type": "string", "enum": ["1", "a", "A", "i", "I"], "description": "Ordered list marker style." }
+    },
+    "example": {
+      "ordered": false
+    }
+  },
+  "core/list-item": {
+    "title": "List Item",
+    "description": "A single item within a core/list block.",
+    "keywords": ["li", "bullet point", "list entry", "item"],
+    "hint": "Always nested inside a core/list block. Each core/list-item represents one bullet or numbered entry.",
+    "attributes": {
+      "content": { "type": "string", "description": "The text content of the list item. Supports inline HTML." }
+    },
+    "example": {
+      "content": "This is a list item."
+    }
+  },
+  "core/quote": {
+    "title": "Quote",
+    "description": "A stylized blockquote with optional citation.",
+    "keywords": ["blockquote", "testimonial", "citation", "pullquote", "excerpt"],
+    "hint": "Use for short quotations that flow with content. For large standalone pull quotes, use core/pullquote instead.",
+    "attributes": {
+      "value": { "type": "string", "description": "The quoted text content (supports nested paragraph blocks)." },
+      "citation": { "type": "string", "description": "The source or author of the quote." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] }
+    },
+    "example": {
+      "value": "<p>The best way to predict the future is to invent it.</p>",
+      "citation": "Alan Kay"
+    }
+  },
+  "core/pullquote": {
+    "title": "Pullquote",
+    "description": "A large, visually prominent quote displayed as a standalone design element.",
+    "keywords": ["featured quote", "highlight quote", "big quote", "callout quote", "magazine quote"],
+    "hint": "Use for a single important quote you want to visually highlight. Styled more prominently than core/quote. Good for testimonials or key statements.",
+    "attributes": {
+      "value": { "type": "string", "description": "The quoted text." },
+      "citation": { "type": "string", "description": "The source or author of the quote." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "textAlign": { "type": "string", "enum": ["left", "center", "right"] }
+    },
+    "example": {
+      "value": "<p>Design is not just what it looks like — it's how it works.</p>",
+      "citation": "Steve Jobs"
+    }
+  },
+  "core/table": {
+    "title": "Table",
+    "description": "A structured data table with rows and columns.",
+    "keywords": ["grid", "data table", "rows", "columns", "spreadsheet", "matrix"],
+    "hint": "Use for tabular data with clear row/column relationships. Not for layout — use core/columns for layout grids.",
+    "attributes": {
+      "hasFixedLayout": { "type": "boolean", "description": "Whether columns have equal fixed widths." },
+      "caption": { "type": "string", "description": "An optional caption displayed below the table." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "head": { "type": "array", "description": "Array of header row objects with cells." },
+      "body": { "type": "array", "description": "Array of body row objects with cells." },
+      "foot": { "type": "array", "description": "Array of footer row objects with cells." }
+    },
+    "example": {
+      "hasFixedLayout": false,
+      "head": [{ "cells": [{ "content": "Name" }, { "content": "Role" }, { "content": "Location" }] }],
+      "body": [
+        { "cells": [{ "content": "Alice" }, { "content": "Developer" }, { "content": "Berlin" }] },
+        { "cells": [{ "content": "Bob" }, { "content": "Designer" }, { "content": "Paris" }] }
+      ]
+    }
+  },
+  "core/code": {
+    "title": "Code",
+    "description": "Displays a block of preformatted code with a monospace font.",
+    "keywords": ["source code", "snippet", "programming", "monospace", "technical", "pre"],
+    "hint": "Use for code samples. Content is rendered as-is inside a <pre><code> element. For non-code preformatted text, use core/preformatted.",
+    "attributes": {
+      "content": { "type": "string", "description": "The code content. Whitespace and newlines are preserved." }
+    },
+    "example": {
+      "content": "function greet( name ) {\n    return `Hello, ${ name }!`;\n}"
+    }
+  },
+  "core/preformatted": {
+    "title": "Preformatted",
+    "description": "Displays text exactly as typed, preserving spaces and line breaks.",
+    "keywords": ["pre", "plain text", "ascii", "monospace", "formatted text", "whitespace"],
+    "hint": "Use for preformatted text where whitespace matters but it isn't code. For code, use core/code instead.",
+    "attributes": {
+      "content": { "type": "string", "description": "The preformatted text. Whitespace and line breaks are preserved." }
+    },
+    "example": {
+      "content": "Name:    Alice\nRole:    Developer\nCity:    Berlin"
+    }
+  },
+  "core/verse": {
+    "title": "Verse",
+    "description": "A block for poetry, lyrics, or other content where line breaks are meaningful.",
+    "keywords": ["poem", "poetry", "lyrics", "song", "stanza", "line breaks"],
+    "hint": "Use for poems, song lyrics, or artistic text where every line break is intentional.",
+    "attributes": {
+      "content": { "type": "string", "description": "The verse text. Line breaks are preserved." },
+      "textAlign": { "type": "string", "enum": ["left", "center", "right"] }
+    },
+    "example": {
+      "content": "Shall I compare thee to a summer's day?\nThou art more lovely and more temperate."
+    }
+  },
+  "core/html": {
+    "title": "Custom HTML",
+    "description": "Allows inserting arbitrary HTML markup directly into the page.",
+    "keywords": ["raw html", "embed code", "custom code", "html block", "shortcode alternative"],
+    "hint": "Use only when no other block can achieve the desired output. HTML is output verbatim. Avoid for content that can be expressed with standard blocks.",
+    "attributes": {
+      "content": { "type": "string", "description": "Raw HTML content to output verbatim." }
+    },
+    "example": {
+      "content": "<div class=\"custom-widget\"><p>Custom HTML content here.</p></div>"
+    }
+  },
+  "core/separator": {
+    "title": "Separator",
+    "description": "A horizontal rule to visually divide sections of content.",
+    "keywords": ["hr", "divider", "horizontal rule", "section break", "line"],
+    "hint": "Use to create a visual break between sections. Supports dot, wide, and short style variants.",
+    "attributes": {
+      "opacity": { "type": "string", "enum": ["alpha-channel", "css"], "description": "Controls separator opacity rendering method." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] }
+    },
+    "example": {}
+  },
+  "core/spacer": {
+    "title": "Spacer",
+    "description": "Adds vertical whitespace between blocks.",
+    "keywords": ["space", "gap", "margin", "padding", "whitespace", "blank"],
+    "hint": "Use to add vertical space between sections. Set height in pixels. Prefer CSS spacing when possible, but this block is useful for quick visual adjustments.",
+    "attributes": {
+      "height": { "type": "string", "description": "The height of the spacer. Accepts pixel values (e.g. '100px') or other CSS units." },
+      "width": { "type": "string", "description": "Optional width of the spacer element." }
+    },
+    "example": {
+      "height": "60px"
+    }
+  },
+  "core/buttons": {
+    "title": "Buttons",
+    "description": "A container block that holds one or more core/button blocks side by side.",
+    "keywords": ["cta", "call to action", "button group", "actions", "links"],
+    "hint": "Always wrap core/button blocks inside a core/buttons container. Use for calls to action, form submissions, or link groups.",
+    "attributes": {
+      "layout": { "type": "object", "description": "Layout configuration — e.g. flex direction and justification." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] }
+    },
+    "example": {}
+  },
+  "core/button": {
+    "title": "Button",
+    "description": "A styled clickable button with a URL link.",
+    "keywords": ["link", "cta", "call to action", "action button", "click"],
+    "hint": "Must be placed inside a core/buttons block. Supports primary (filled) and secondary (outline) styles.",
+    "attributes": {
+      "text": { "type": "string", "description": "The button label text." },
+      "url": { "type": "string", "description": "The URL the button links to." },
+      "linkTarget": { "type": "string", "enum": ["_self", "_blank"], "description": "Whether the link opens in the same tab or a new tab." },
+      "rel": { "type": "string", "description": "Link rel attribute (e.g. 'noopener noreferrer')." },
+      "type": { "type": "string", "enum": ["button", "submit", "reset"] },
+      "width": { "type": "integer", "enum": [25, 33, 50, 75, 100], "description": "Optional percentage width of the button." }
+    },
+    "example": {
+      "text": "Get Started",
+      "url": "https://example.com",
+      "linkTarget": "_self"
+    }
+  },
+  "core/group": {
+    "title": "Group",
+    "description": "A container block that groups other blocks together, optionally with a background color, padding, or border.",
+    "keywords": ["container", "wrapper", "section", "div", "box", "card"],
+    "hint": "Use as a general-purpose container to group blocks and apply shared styling. Supports row and stack layout modes. Common for card layouts, sections, and CTAs.",
+    "attributes": {
+      "tagName": { "type": "string", "enum": ["div", "section", "article", "main", "aside", "header", "footer"], "description": "The HTML element used for the group wrapper." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "layout": { "type": "object", "description": "Layout configuration — e.g. constrained, flex, or grid." }
+    },
+    "example": {
+      "tagName": "section"
+    }
+  },
+  "core/columns": {
+    "title": "Columns",
+    "description": "A multi-column layout block that holds core/column blocks.",
+    "keywords": ["layout", "grid", "columns", "side by side", "two column", "three column"],
+    "hint": "Use to create multi-column layouts. Always contains core/column children. Each core/column can have a specified width percentage.",
+    "attributes": {
+      "columns": { "type": "integer", "description": "Number of columns (auto-derived from inner core/column blocks)." },
+      "isStackedOnMobile": { "type": "boolean", "description": "Whether columns stack vertically on mobile screens." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "verticalAlignment": { "type": "string", "enum": ["top", "center", "bottom"] }
+    },
+    "example": {
+      "isStackedOnMobile": true
+    }
+  },
+  "core/column": {
+    "title": "Column",
+    "description": "A single column within a core/columns block.",
+    "keywords": ["column", "col", "cell", "pane"],
+    "hint": "Must always be a direct child of core/columns. Set width as a percentage (e.g. '33.33%', '50%'). Can contain any other blocks.",
+    "attributes": {
+      "width": { "type": "string", "description": "Column width as a percentage (e.g. '33.33%') or pixel value." },
+      "verticalAlignment": { "type": "string", "enum": ["top", "center", "bottom"] },
+      "allowedBlocks": { "type": "array", "description": "Optional list of block names allowed inside this column." }
+    },
+    "example": {
+      "width": "50%"
+    }
+  },
+  "core/media-text": {
+    "title": "Media & Text",
+    "description": "Displays an image or video alongside a block of text content in a side-by-side layout.",
+    "keywords": ["side by side", "image text", "two column", "feature", "highlight", "inline image"],
+    "hint": "Use for alternating image-and-text feature sections. The media appears on one side and the text content on the other. Supports flipping the media position.",
+    "attributes": {
+      "mediaId": { "type": "integer", "description": "WordPress attachment ID of the media." },
+      "mediaUrl": { "type": "string", "description": "URL of the media (image or video)." },
+      "mediaAlt": { "type": "string", "description": "Alt text for image media." },
+      "mediaType": { "type": "string", "enum": ["image", "video"], "description": "The type of media." },
+      "mediaPosition": { "type": "string", "enum": ["left", "right"], "description": "Which side the media appears on." },
+      "mediaWidth": { "type": "integer", "description": "Width of the media column as a percentage (default 50)." },
+      "isStackedOnMobile": { "type": "boolean", "description": "Whether the layout stacks vertically on mobile." },
+      "verticalAlignment": { "type": "string", "enum": ["top", "center", "bottom"] },
+      "imageFill": { "type": "boolean", "description": "Whether the image fills its container area." }
+    },
+    "example": {
+      "mediaUrl": "https://example.com/feature-image.jpg",
+      "mediaAlt": "Feature illustration",
+      "mediaType": "image",
+      "mediaPosition": "left",
+      "mediaWidth": 50
+    }
+  },
+  "core/cover": {
+    "title": "Cover",
+    "description": "Displays an image or video as a full-width background with overlaid text or blocks.",
+    "keywords": ["hero", "banner", "full width", "background image", "overlay", "jumbotron"],
+    "hint": "Use for hero sections, banners, and full-width image backgrounds with overlaid content. Can contain heading, paragraph, and button blocks as inner content.",
+    "attributes": {
+      "url": { "type": "string", "description": "URL of the background image or video." },
+      "alt": { "type": "string", "description": "Alt text for the background image (accessibility)." },
+      "id": { "type": "integer", "description": "WordPress attachment ID of the background media." },
+      "backgroundType": { "type": "string", "enum": ["image", "video"], "description": "Type of background media." },
+      "dimRatio": { "type": "integer", "description": "Overlay opacity from 0 (transparent) to 100 (opaque)." },
+      "overlayColor": { "type": "string", "description": "Theme color slug for the overlay." },
+      "customOverlayColor": { "type": "string", "description": "Custom hex color for the overlay." },
+      "minHeight": { "type": "integer", "description": "Minimum block height in pixels." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "contentPosition": { "type": "string", "description": "Position of inner content (e.g. 'center center', 'top left')." },
+      "isRepeated": { "type": "boolean", "description": "Whether the background image tiles/repeats." },
+      "hasParallax": { "type": "boolean", "description": "Whether the background scrolls with a parallax effect." }
+    },
+    "example": {
+      "url": "https://example.com/hero-bg.jpg",
+      "dimRatio": 50,
+      "align": "full",
+      "minHeight": 400,
+      "contentPosition": "center center"
+    }
+  },
+  "core/video": {
+    "title": "Video",
+    "description": "Embeds a self-hosted video file with player controls.",
+    "keywords": ["mp4", "movie", "film", "clip", "player", "media"],
+    "hint": "Use for self-hosted video files uploaded to the WordPress media library. For YouTube, Vimeo, or other external video services, use core/embed instead.",
+    "attributes": {
+      "src": { "type": "string", "description": "URL of the video file." },
+      "caption": { "type": "string", "description": "Caption displayed below the video." },
+      "autoplay": { "type": "boolean", "description": "Whether the video plays automatically." },
+      "controls": { "type": "boolean", "description": "Whether player controls are visible (default true)." },
+      "loop": { "type": "boolean", "description": "Whether the video loops continuously." },
+      "muted": { "type": "boolean", "description": "Whether the video starts muted." },
+      "playsInline": { "type": "boolean", "description": "Whether the video plays inline on mobile." },
+      "preload": { "type": "string", "enum": ["auto", "metadata", "none"], "description": "Video preload strategy." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "poster": { "type": "string", "description": "URL of the poster image shown before play." }
+    },
+    "example": {
+      "src": "https://example.com/video.mp4",
+      "controls": true,
+      "loop": false,
+      "muted": false
+    }
+  },
+  "core/audio": {
+    "title": "Audio",
+    "description": "Embeds a self-hosted audio file with a browser-native audio player.",
+    "keywords": ["mp3", "sound", "music", "podcast", "player", "recording"],
+    "hint": "Use for self-hosted audio files (MP3, OGG, WAV). Renders as an HTML5 audio player. Not for external streaming services.",
+    "attributes": {
+      "src": { "type": "string", "description": "URL of the audio file." },
+      "caption": { "type": "string", "description": "Caption displayed below the audio player." },
+      "autoplay": { "type": "boolean", "description": "Whether audio plays automatically on load." },
+      "loop": { "type": "boolean", "description": "Whether audio loops when it ends." },
+      "preload": { "type": "string", "enum": ["auto", "metadata", "none"], "description": "Audio preload strategy." }
+    },
+    "example": {
+      "src": "https://example.com/audio.mp3",
+      "autoplay": false,
+      "loop": false,
+      "preload": "metadata"
+    }
+  },
+  "core/file": {
+    "title": "File",
+    "description": "Displays a downloadable file attachment with a button link.",
+    "keywords": ["download", "attachment", "pdf", "document", "asset", "link"],
+    "hint": "Use when you want visitors to download a file. Shows the filename and a download button. Supports PDFs, Word documents, and any other file type.",
+    "attributes": {
+      "id": { "type": "integer", "description": "WordPress attachment ID of the file." },
+      "href": { "type": "string", "description": "URL of the downloadable file." },
+      "fileName": { "type": "string", "description": "Display name of the file." },
+      "textLinkHref": { "type": "string", "description": "URL for the text link portion." },
+      "textLinkTarget": { "type": "string", "enum": ["_self", "_blank"], "description": "Whether the file opens in a new tab." },
+      "showDownloadButton": { "type": "boolean", "description": "Whether to display the download button." },
+      "downloadButtonText": { "type": "string", "description": "Label for the download button." },
+      "displayPreview": { "type": "boolean", "description": "Whether to show a PDF preview inline (PDF files only)." },
+      "previewHeight": { "type": "integer", "description": "Height in pixels of the PDF preview." }
+    },
+    "example": {
+      "href": "https://example.com/document.pdf",
+      "fileName": "Annual Report 2024",
+      "showDownloadButton": true,
+      "downloadButtonText": "Download PDF"
+    }
+  },
+  "core/embed": {
+    "title": "Embed",
+    "description": "Embeds content from external services such as YouTube, Vimeo, Twitter, Spotify, and hundreds of oEmbed-compatible providers.",
+    "keywords": ["youtube", "vimeo", "twitter", "spotify", "iframe", "oembed", "external video", "social media"],
+    "hint": "Use for embedding external content by URL. Paste a URL from a supported service (YouTube, Vimeo, Spotify, Twitter/X, Instagram, TikTok, etc.) and WordPress will automatically fetch an oEmbed preview.",
+    "attributes": {
+      "url": { "type": "string", "description": "The URL of the content to embed." },
+      "type": { "type": "string", "description": "The oEmbed response type (e.g. 'video', 'rich', 'photo')." },
+      "providerNameSlug": { "type": "string", "description": "Slug identifying the provider (e.g. 'youtube', 'vimeo', 'spotify')." },
+      "allowResponsive": { "type": "boolean", "description": "Whether the embed resizes responsively." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] },
+      "caption": { "type": "string", "description": "Optional caption displayed below the embed." }
+    },
+    "example": {
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "allowResponsive": true,
+      "align": "center"
+    }
+  },
+  "core/search": {
+    "title": "Search",
+    "description": "Displays a site search form with a text input and submit button.",
+    "keywords": ["search bar", "search box", "find", "query", "lookup", "search form"],
+    "hint": "Use to add a site search form to a page or template. Supports customizing the label, placeholder, and button text.",
+    "attributes": {
+      "label": { "type": "string", "description": "Visible label for the search input (set showLabel to false to hide it)." },
+      "showLabel": { "type": "boolean", "description": "Whether the label is visible." },
+      "placeholder": { "type": "string", "description": "Placeholder text inside the search input." },
+      "buttonText": { "type": "string", "description": "Text on the submit button." },
+      "buttonPosition": { "type": "string", "enum": ["button-inside", "button-outside", "no-button"], "description": "Position of the submit button relative to the input." },
+      "buttonUseIcon": { "type": "boolean", "description": "Whether the button displays an icon instead of text." },
+      "align": { "type": "string", "enum": ["left", "center", "right", "wide", "full"] }
+    },
+    "example": {
+      "label": "Search",
+      "showLabel": false,
+      "placeholder": "Search our site…",
+      "buttonText": "Search",
+      "buttonPosition": "button-outside"
+    }
+  }
+}
