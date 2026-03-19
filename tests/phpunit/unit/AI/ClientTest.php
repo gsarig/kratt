@@ -68,4 +68,146 @@ class ClientTest extends WP_UnitTestCase {
 	public function test_test_mode_does_not_return_error(): void {
 		$this->assertArrayNotHasKey( 'error', $this->dummy_result );
 	}
+
+	// =========================================================================
+	// strip_json_fences()
+	// =========================================================================
+
+	public function test_strip_json_fences_leaves_clean_json_unchanged(): void {
+		$json = '{"blocks":[]}';
+
+		$this->assertSame( $json, Client::strip_json_fences( $json ) );
+	}
+
+	public function test_strip_json_fences_removes_json_language_fence(): void {
+		$fenced = "```json\n{\"blocks\":[]}\n```";
+
+		$this->assertSame( '{"blocks":[]}', Client::strip_json_fences( $fenced ) );
+	}
+
+	public function test_strip_json_fences_removes_generic_fence(): void {
+		$fenced = "```\n{\"blocks\":[]}\n```";
+
+		$this->assertSame( '{"blocks":[]}', Client::strip_json_fences( $fenced ) );
+	}
+
+	public function test_strip_json_fences_handles_fence_with_no_newline(): void {
+		$fenced = '```json{"blocks":[]}```';
+
+		$this->assertSame( '{"blocks":[]}', Client::strip_json_fences( $fenced ) );
+	}
+
+	public function test_strip_json_fences_trims_surrounding_whitespace(): void {
+		$padded = "  \n{\"blocks\":[]}\n  ";
+
+		$this->assertSame( '{"blocks":[]}', Client::strip_json_fences( $padded ) );
+	}
+
+	// =========================================================================
+	// filter_unknown_blocks()
+	// =========================================================================
+
+	private function minimal_catalog(): array {
+		return [
+			'core/paragraph' => [ 'name' => 'core/paragraph', 'enabled' => true ],
+			'core/heading'   => [ 'name' => 'core/heading', 'enabled' => true ],
+			'core/column'    => [ 'name' => 'core/column', 'enabled' => true ],
+			'core/columns'   => [ 'name' => 'core/columns', 'enabled' => true ],
+		];
+	}
+
+	public function test_filter_unknown_blocks_keeps_known_blocks(): void {
+		$blocks = [
+			[ 'name' => 'core/paragraph', 'attributes' => [ 'content' => 'Hello' ] ],
+		];
+
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'core/paragraph', $result[0]['name'] );
+	}
+
+	public function test_filter_unknown_blocks_removes_unknown_names(): void {
+		$blocks = [
+			[ 'name' => 'core/paragraph', 'attributes' => [] ],
+			[ 'name' => 'fake/invented-block', 'attributes' => [] ],
+		];
+
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'core/paragraph', $result[0]['name'] );
+	}
+
+	public function test_filter_unknown_blocks_returns_empty_when_all_unknown(): void {
+		$blocks = [
+			[ 'name' => 'invented/one' ],
+			[ 'name' => 'invented/two' ],
+		];
+
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertSame( [], $result );
+	}
+
+	public function test_filter_unknown_blocks_validates_inner_blocks_recursively(): void {
+		$blocks = [
+			[
+				'name'        => 'core/columns',
+				'attributes'  => [],
+				'innerBlocks' => [
+					[
+						'name'        => 'core/column',
+						'attributes'  => [],
+						'innerBlocks' => [
+							[ 'name' => 'core/paragraph', 'attributes' => [] ],
+							[ 'name' => 'fake/block', 'attributes' => [] ],
+						],
+					],
+				],
+			],
+		];
+
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertCount( 1, $result );
+		$inner  = $result[0]['innerBlocks'][0]['innerBlocks'];
+		$this->assertCount( 1, $inner );
+		$this->assertSame( 'core/paragraph', $inner[0]['name'] );
+	}
+
+	public function test_filter_unknown_blocks_removes_unknown_inner_blocks_parent(): void {
+		$blocks = [
+			[
+				'name'        => 'fake/container',
+				'innerBlocks' => [
+					[ 'name' => 'core/paragraph', 'attributes' => [] ],
+				],
+			],
+		];
+
+		// The parent is unknown, so the whole entry (including its children) is dropped.
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertSame( [], $result );
+	}
+
+	public function test_filter_unknown_blocks_handles_empty_array(): void {
+		$result = Client::filter_unknown_blocks( [], $this->minimal_catalog() );
+
+		$this->assertSame( [], $result );
+	}
+
+	public function test_filter_unknown_blocks_skips_malformed_entries(): void {
+		$blocks = [
+			'not-an-array',
+			[ 'no-name-key' => true ],
+			[ 'name' => 'core/paragraph' ],
+		];
+
+		$result = Client::filter_unknown_blocks( $blocks, $this->minimal_catalog() );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'core/paragraph', $result[0]['name'] );
+	}
 }

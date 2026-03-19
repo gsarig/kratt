@@ -38,13 +38,61 @@ class Client {
 			return [ 'error' => __( 'Unexpected response from AI provider.', 'kratt' ) ];
 		}
 
-		$decoded = json_decode( $response, associative: true );
+		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
+		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
+			$decoded['blocks'] = self::filter_unknown_blocks( $decoded['blocks'], $catalog );
+		}
+
 		return $decoded;
+	}
+
+	/**
+	 * Strips markdown code fences from an AI response string.
+	 *
+	 * Some models wrap JSON in ```json ... ``` or ``` ... ``` fences despite
+	 * being instructed not to. This normalises the response before JSON decoding.
+	 *
+	 * @param string $response Raw string from the AI provider.
+	 * @return string
+	 */
+	public static function strip_json_fences( string $response ): string {
+		$response = trim( $response );
+		$response = preg_replace( '/^```(?:json)?\s*\n?/', '', $response ) ?? $response;
+		$response = preg_replace( '/\n?```\s*$/', '', $response ) ?? $response;
+		return trim( $response );
+	}
+
+	/**
+	 * Recursively filters a blocks array to only include names present in the catalog.
+	 *
+	 * Prevents unknown or hallucinated block names from reaching the editor.
+	 * innerBlocks are validated with the same catalog.
+	 *
+	 * @param array<int, mixed>    $blocks  Blocks from the AI response.
+	 * @param array<string, mixed> $catalog The block catalog, keyed by block name.
+	 * @return array<int, mixed>
+	 */
+	public static function filter_unknown_blocks( array $blocks, array $catalog ): array {
+		$valid = [];
+
+		foreach ( $blocks as $block ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! isset( $catalog[ $block['name'] ] ) ) {
+				continue;
+			}
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = self::filter_unknown_blocks( $block['innerBlocks'], $catalog );
+			}
+
+			$valid[] = $block;
+		}
+
+		return $valid;
 	}
 
 	/**
