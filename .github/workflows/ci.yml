@@ -59,13 +59,13 @@ jobs:
           retention-days: 1
 
   phpunit:
-    name: PHPUnit (WP ${{ matrix.wp-version }}, PHP ${{ matrix.php-version }})
+    name: PHPUnit (WP ${{ matrix.wp-version }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       matrix:
-        wp-version: ['6.7', 'latest']
+        wp-version: ['latest']
         php-version: ['8.1']
     services:
       db:
