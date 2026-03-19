@@ -28,7 +28,7 @@ const KrattIcon = (
 );
 import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { createBlock, serialize } from '@wordpress/blocks';
+import { createBlock } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
@@ -73,14 +73,33 @@ function KrattSidebar() {
 		setIsLoading( true );
 
 		try {
-			// Serialize current editor content as read-only context.
-			const editorContent = serialize( blocks );
+			// Build a numbered block summary for positional context.
+			const editorContent = blocks.length
+				? blocks
+					.map( ( block, i ) => {
+						let line = `[${ i }] ${ block.name }`;
+						const raw =
+							block.attributes?.content ||
+							block.attributes?.value ||
+							block.attributes?.caption ||
+							block.attributes?.label ||
+							'';
+						const text = raw.replace( /<[^>]+>/g, '' ).trim();
+						if ( text ) {
+							line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
+						}
+						return line;
+					} )
+					.join( '\n' )
+				: '';
 
 			// Collect allowed blocks from editor settings.
 			const { getSettings } = wp.data.select( blockEditorStore );
 			const allowedBlockTypes = getSettings().allowedBlockTypes;
 			const allowedBlocks =
-				Array.isArray( allowedBlockTypes ) ? allowedBlockTypes : null;
+				Array.isArray( allowedBlockTypes ) ? allowedBlockTypes
+				: allowedBlockTypes === false ? []
+				: null;
 
 			// Post context — post_type is always available even for unsaved posts.
 			const { getCurrentPostId, getCurrentPostType } = wp.data.select( 'core/editor' );
@@ -116,7 +135,14 @@ function KrattSidebar() {
 
 			const parsedBlocks = response.blocks.map( buildBlock );
 
-			const { index, rootClientId } = getInsertionPoint();
+			let { index, rootClientId } = getInsertionPoint();
+			if ( typeof response.insertBefore === 'number' && response.insertBefore >= 0 && response.insertBefore < blocks.length ) {
+				index = response.insertBefore;
+				rootClientId = undefined;
+			} else if ( typeof response.insertAfter === 'number' && response.insertAfter >= 0 && response.insertAfter < blocks.length ) {
+				index = response.insertAfter + 1;
+				rootClientId = undefined;
+			}
 			insertBlocks( parsedBlocks, index, rootClientId );
 
 			addMessage(

@@ -19,10 +19,11 @@ class PromptBuilder {
 		$block_list = BlockCatalog::format_for_prompt( $catalog );
 
 		$editor_section = '' !== $editor_content
-			? "The editor currently contains the following blocks (read-only \xe2\x80\x94 do not modify existing blocks, only add new ones):\n\n" . $editor_content
+			? "The editor currently contains these blocks (read-only \xe2\x80\x94 do not modify existing blocks, only add new ones). Reference them by index to specify where to insert:\n\n" . $editor_content
 			: 'The editor is currently empty.';
 
 		$example_success = '{"blocks": [{"name": "core/paragraph", "attributes": {"content": "Hello world"}}, {"name": "core/columns", "attributes": {}, "innerBlocks": [{"name": "core/column", "attributes": {"width": "50%"}, "innerBlocks": [{"name": "core/heading", "attributes": {"content": "Left", "level": 2}}]}, {"name": "core/column", "attributes": {"width": "50%"}, "innerBlocks": [{"name": "core/paragraph", "attributes": {"content": "Right side content."}}]}]}]}';
+		$example_positioned = '{"blocks": [{"name": "core/map", "attributes": {}}], "insertBefore": 0}';
 		$example_failure = '{"error": "Explanation of why this cannot be done.", "suggestion": "A concrete alternative the user could try."}';
 
 		$rules = implode(
@@ -43,7 +44,7 @@ class PromptBuilder {
 			'You are an assistant embedded in the WordPress Block Editor. Your sole job is to convert natural language requests into a JSON description of WordPress blocks to insert.',
 			"## Available Blocks\n\nUse ONLY the blocks listed below \xe2\x80\x94 never invent or guess block names. If no suitable block exists, say so.\n\n" . $block_list,
 			"## Current Editor Content\n\n" . $editor_section,
-			"## Response Format\n\nAlways respond with a raw JSON object \xe2\x80\x94 no markdown fences, no prose, no explanation outside the JSON.\n\nOn success, return a \"blocks\" array where each entry has:\n- \"name\": the block name (required)\n- \"attributes\": object of attribute values (optional \xe2\x80\x94 omit if empty)\n- \"innerBlocks\": array of nested block specs using the same structure (optional)\n\nExample:\n" . $example_success . "\n\nOn failure or when the request cannot be fulfilled:\n" . $example_failure,
+			"## Response Format\n\nAlways respond with a raw JSON object \xe2\x80\x94 no markdown fences, no prose, no explanation outside the JSON.\n\nOn success, return a \"blocks\" array where each entry has:\n- \"name\": the block name (required)\n- \"attributes\": object of attribute values (optional \xe2\x80\x94 omit if empty)\n- \"innerBlocks\": array of nested block specs using the same structure (optional)\n\nBy default, new blocks are appended at the end of the editor. When the request implies a specific position relative to an existing block, add \"insertBefore\" or \"insertAfter\" with the index from the Current Editor Content list.\n\nExample (append):\n" . $example_success . "\n\nExample (positioned \xe2\x80\x94 insert before block [0]):\n" . $example_positioned . "\n\nOn failure or when the request cannot be fulfilled:\n" . $example_failure,
 			"## Rules\n\n" . $rules,
 		];
 

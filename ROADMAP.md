@@ -17,6 +17,9 @@ On large sites, the full formatted catalog can be several thousand tokens per re
 - Allow hiding entire sources (e.g. exclude all core blocks if the site only uses custom ones)
 - Apply a per-request relevance filter based on the prompt text
 
+### Prompt caching
+Every compose request sends the full system prompt (block catalog + rules) to the AI provider. Anthropic supports prompt caching, which bills cached input tokens at ~10% of the normal rate. The WP AI Client abstraction layer does not currently expose caching controls, so this requires either waiting for upstream support or bypassing `wp_ai_client_prompt` for a direct SDK call. Worth revisiting once the WP AI Client matures.
+
 ## API
 
 ### Rate limiting on the compose endpoint

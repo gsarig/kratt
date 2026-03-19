@@ -116,8 +116,12 @@ class BlockCatalog {
 			if ( ! empty( $block['attributes'] ) ) {
 				$attr_parts = [];
 				foreach ( $block['attributes'] as $attr_name => $attr ) {
+					$type = $attr['type'] ?? 'string';
+					// Skip non-text attributes — the AI is instructed not to set them (rule 2).
+					if ( 'string' !== $type && empty( $attr['enum'] ) ) {
+						continue;
+					}
 					$attr_desc = $attr['description'] ?? '';
-					$type      = $attr['type'] ?? 'string';
 					if ( ! empty( $attr['enum'] ) ) {
 						$type = implode( '|', $attr['enum'] );
 					}
