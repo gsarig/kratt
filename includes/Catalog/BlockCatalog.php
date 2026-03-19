@@ -182,11 +182,6 @@ class BlockCatalog {
 	 * Param names are converted from snake_case to camelCase to match block attribute conventions.
 	 * Only existing block attributes are enriched — no new attributes are invented.
 	 *
-	 * Plugin authors can also supply explicit overrides via `meta['block_attributes']` for cases
-	 * where ability params do not map 1:1 to block attributes (e.g. `lat`/`lng` params that are
-	 * stored as a `bounds: [[lat, lng]]` attribute in the block). These overrides take precedence
-	 * over the auto-derived descriptions.
-	 *
 	 * @param array<string, mixed> $catalog Catalog to enrich.
 	 * @return array<string, mixed> Enriched catalog.
 	 */
@@ -208,15 +203,6 @@ class BlockCatalog {
 				continue;
 			}
 
-			// Apply explicit block_attributes overrides first (for params that don't map 1:1).
-			$manual = $ability->get_meta_item( 'block_attributes' ) ?? [];
-			foreach ( $manual as $attr_name => $attr_def ) {
-				$catalog[ $block_name ]['attributes'][ $attr_name ] = array_merge(
-					$catalog[ $block_name ]['attributes'][ $attr_name ] ?? [],
-					$attr_def
-				);
-			}
-
 			// Derive descriptions from input_schema properties via snake_to_camel mapping.
 			$properties = $ability->get_input_schema()['properties'] ?? [];
 			foreach ( $properties as $param_name => $param_schema ) {
@@ -226,11 +212,6 @@ class BlockCatalog {
 
 				$attr_name   = self::snake_to_camel( $param_name );
 				$description = $param_schema['description'] ?? '';
-
-				// Manual overrides take precedence — skip if already applied.
-				if ( isset( $manual[ $attr_name ] ) ) {
-					continue;
-				}
 
 				if ( ! $description || ! isset( $catalog[ $block_name ]['attributes'][ $attr_name ] ) ) {
 					continue; // Only enrich existing attrs; never invent new ones.

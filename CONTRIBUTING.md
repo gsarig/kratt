@@ -115,7 +115,7 @@ wp_register_ability(
     'my-plugin/add-my-block',  // namespace "my-plugin" matches block "my/plugin"
     [
         'label'            => __( 'Add My Block', 'my-plugin' ),
-        'description'      => __( 'Inserts a my-plugin/my-block into a post.', 'my-plugin' ),
+        'description'      => __( 'Inserts a my/plugin block into a post.', 'my-plugin' ),
         'execute_callback' => 'my_plugin_execute',
         'input_schema'     => [
             'type'       => 'object',
@@ -127,19 +127,6 @@ wp_register_ability(
         'permission_callback' => fn() => current_user_can( 'edit_posts' ),
     ]
 );
-```
-
-If your ability params don't map 1:1 to block attributes (e.g. separate `lat`/`lng` params stored as a `bounds: [[lat, lng]]` block attribute), you can supply explicit overrides via `meta['block_attributes']`:
-
-```php
-'meta' => [
-    'block_attributes' => [
-        'bounds' => [
-            'type'        => 'array',
-            'description' => 'Map centre as [[lat, lng]], e.g. [[37.97, 23.72]] for Athens.',
-        ],
-    ],
-],
 ```
 
 After installing or updating a plugin that registers an ability, trigger a catalog rescan via **Settings → Kratt → Rescan Blocks**. The catalog is also rebuilt automatically when any plugin or theme is activated.
