@@ -13,10 +13,15 @@ jobs:
   static-analysis:
     name: Static Analysis (PHPStan + PHPCS)
     runs-on: ubuntu-latest
+    needs: js-build
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-assets
+          path: build/
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.1'
