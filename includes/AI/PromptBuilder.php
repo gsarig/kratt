@@ -8,10 +8,16 @@ use Kratt\Catalog\BlockCatalog;
 
 class PromptBuilder {
 
+	/**
+	 * Builds the system prompt for the AI, including the block catalog and editor context.
+	 *
+	 * @param array<string, mixed> $catalog        Available blocks to include in the prompt.
+	 * @param string               $editor_content Current editor content sent as read-only context.
+	 */
 	public static function build( array $catalog, string $editor_content = '' ): string {
 		$block_list = BlockCatalog::format_for_prompt( $catalog );
 
-		$editor_section = $editor_content !== ''
+		$editor_section = '' !== $editor_content
 			? "The editor currently contains the following blocks (read-only — do not modify existing blocks, only add new ones):\n\n" . $editor_content
 			: 'The editor is currently empty.';
 

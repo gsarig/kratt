@@ -11,6 +11,8 @@ class BlockCatalog {
 
 	/**
 	 * Returns the stored catalog, or an empty array if not yet scanned.
+	 *
+	 * @return array<string, mixed>
 	 */
 	public static function get(): array {
 		return Settings::get_catalog();
@@ -23,7 +25,7 @@ class BlockCatalog {
 		$core_blocks    = CoreBlocksRepository::get();
 		$registry       = WP_Block_Type_Registry::get_instance();
 		$all_registered = $registry->get_all_registered();
-		$catalog        = [];
+		$catalog = [];
 
 		foreach ( $all_registered as $name => $block_type ) {
 			// Core blocks: use handcrafted data if available, supplement from registry.
@@ -44,9 +46,9 @@ class BlockCatalog {
 				'name'        => $name,
 				'source'      => str_starts_with( $name, 'core/' ) ? 'core' : 'custom',
 				'enabled'     => true,
-				'title'       => $block_type->title ?? $name,
-				'description' => $block_type->description ?? '',
-				'keywords'    => $block_type->keywords ?? [],
+				'title'       => $block_type->title,
+				'description' => $block_type->description,
+				'keywords'    => $block_type->keywords,
 				'hint'        => '',
 				'dynamic'     => $block_type->is_dynamic(),
 				'attributes'  => self::extract_attributes( $block_type ),
@@ -60,15 +62,16 @@ class BlockCatalog {
 	/**
 	 * Filters the catalog to blocks allowed in the current editor context.
 	 *
-	 * @param array            $catalog       Full catalog.
-	 * @param bool|string[]    $allowed_types Value of allowedBlockTypes from the editor.
+	 * @param array<string, mixed> $catalog       Full catalog.
+	 * @param bool|string[]        $allowed_types Value of allowedBlockTypes from the editor.
+	 * @return array<string, mixed>
 	 */
 	public static function filter_by_allowed( array $catalog, bool|array $allowed_types ): array {
-		if ( $allowed_types === true ) {
+		if ( true === $allowed_types ) {
 			return $catalog;
 		}
 
-		if ( $allowed_types === false || $allowed_types === [] ) {
+		if ( false === $allowed_types || [] === $allowed_types ) {
 			return [];
 		}
 
@@ -81,6 +84,8 @@ class BlockCatalog {
 
 	/**
 	 * Formats the catalog as a string for inclusion in the AI system prompt.
+	 *
+	 * @param array<string, mixed> $catalog Catalog to format.
 	 */
 	public static function format_for_prompt( array $catalog ): string {
 		$lines = [];
@@ -91,7 +96,7 @@ class BlockCatalog {
 			}
 
 			$tags = [];
-			if ( $block['source'] === 'custom' ) {
+			if ( 'custom' === $block['source'] ) {
 				$tags[] = 'CUSTOM';
 			}
 			if ( ! empty( $block['dynamic'] ) ) {
@@ -124,7 +129,7 @@ class BlockCatalog {
 			}
 
 			if ( ! empty( $block['example'] ) ) {
-				$line .= "\n  Example: " . json_encode( $block['example'] );
+				$line .= "\n  Example: " . wp_json_encode( $block['example'] );
 			}
 
 			$lines[] = $line;
@@ -133,6 +138,11 @@ class BlockCatalog {
 		return implode( "\n\n", $lines );
 	}
 
+	/**
+	 * Extracts simplified attribute definitions from a block type for use in the prompt.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
 	private static function extract_attributes( \WP_Block_Type $block_type ): array {
 		if ( empty( $block_type->attributes ) ) {
 			return [];

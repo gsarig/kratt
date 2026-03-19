@@ -7,6 +7,8 @@ namespace Kratt\REST;
 use Kratt\Catalog\BlockCatalog;
 use Kratt\Settings\Settings;
 use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
 use WP_REST_Server;
 
 class CatalogController extends WP_REST_Controller {
@@ -36,6 +38,12 @@ class CatalogController extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Checks whether the current user can manage the block catalog.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return true|\WP_Error
+	 */
 	public function permissions_check( $request ) {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to manage the Kratt catalog.', 'kratt' ), [ 'status' => 403 ] );
@@ -43,25 +51,41 @@ class CatalogController extends WP_REST_Controller {
 		return true;
 	}
 
+	/**
+	 * Returns the stored block catalog and the last scan timestamp.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return WP_REST_Response|\WP_Error
+	 */
 	public function get_items( $request ) {
-		return rest_ensure_response( [
-			'blocks'     => BlockCatalog::get(),
-			'scanned_at' => Settings::get_catalog_scanned_at(),
-		] );
+		return rest_ensure_response(
+			[
+				'blocks'     => BlockCatalog::get(),
+				'scanned_at' => Settings::get_catalog_scanned_at(),
+			]
+		);
 	}
 
+	/**
+	 * Triggers a rescan of the block registry and returns the updated catalog.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return WP_REST_Response|\WP_Error
+	 */
 	public function rescan( $request ) {
 		BlockCatalog::scan();
 		$catalog = BlockCatalog::get();
 
-		return rest_ensure_response( [
-			'message'    => sprintf(
-				/* translators: %d: number of blocks found */
-				__( 'Catalog updated. %d blocks found.', 'kratt' ),
-				count( $catalog )
-			),
-			'blocks'     => $catalog,
-			'scanned_at' => Settings::get_catalog_scanned_at(),
-		] );
+		return rest_ensure_response(
+			[
+				'message'    => sprintf(
+					/* translators: %d: number of blocks found */
+					__( 'Catalog updated. %d blocks found.', 'kratt' ),
+					count( $catalog )
+				),
+				'blocks'     => $catalog,
+				'scanned_at' => Settings::get_catalog_scanned_at(),
+			]
+		);
 	}
 }

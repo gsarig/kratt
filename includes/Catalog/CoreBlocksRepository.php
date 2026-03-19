@@ -6,10 +6,20 @@ namespace Kratt\Catalog;
 
 class CoreBlocksRepository {
 
+	/**
+	 * Cached block data loaded from the JSON file. Null until first access.
+	 *
+	 * @var array<string, mixed>|null
+	 */
 	private static ?array $blocks = null;
 
+	/**
+	 * Returns the hand-curated core block catalog loaded from the bundled JSON file.
+	 *
+	 * @return array<string, mixed>
+	 */
 	public static function get(): array {
-		if ( self::$blocks !== null ) {
+		if ( null !== self::$blocks ) {
 			return self::$blocks;
 		}
 
@@ -19,9 +29,10 @@ class CoreBlocksRepository {
 			return [];
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$json = file_get_contents( $file );
 
-		if ( $json === false ) {
+		if ( false === $json ) {
 			return [];
 		}
 

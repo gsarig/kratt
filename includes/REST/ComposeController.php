@@ -7,6 +7,8 @@ namespace Kratt\REST;
 use Kratt\AI\Client;
 use Kratt\Catalog\BlockCatalog;
 use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
 use WP_REST_Server;
 
 class ComposeController extends WP_REST_Controller {
@@ -44,6 +46,12 @@ class ComposeController extends WP_REST_Controller {
 		);
 	}
 
+	/**
+	 * Checks whether the current user can use the compose endpoint.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return true|\WP_Error
+	 */
 	public function create_item_permissions_check( $request ) {
 		if ( ! current_user_can( 'edit_posts' ) ) {
 			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to use Kratt.', 'kratt' ), [ 'status' => 403 ] );
@@ -51,6 +59,12 @@ class ComposeController extends WP_REST_Controller {
 		return true;
 	}
 
+	/**
+	 * Handles a compose request: builds a block list from the user's prompt.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return WP_REST_Response|\WP_Error
+	 */
 	public function create_item( $request ) {
 		$prompt         = $request->get_param( 'prompt' );
 		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
@@ -63,15 +77,17 @@ class ComposeController extends WP_REST_Controller {
 
 		$catalog = BlockCatalog::get();
 
-		if ( $allowed_blocks !== null ) {
+		if ( null !== $allowed_blocks ) {
 			$catalog = BlockCatalog::filter_by_allowed( $catalog, $allowed_blocks );
 		}
 
 		if ( empty( $catalog ) ) {
-			return rest_ensure_response( [
-				'error'      => __( 'No blocks are available. Please run a catalog scan from the Kratt settings page.', 'kratt' ),
-				'suggestion' => __( 'Go to Settings → Kratt and click "Rescan Blocks".', 'kratt' ),
-			] );
+			return rest_ensure_response(
+				[
+					'error'      => __( 'No blocks are available. Please run a catalog scan from the Kratt settings page.', 'kratt' ),
+					'suggestion' => __( 'Go to Settings → Kratt and click "Rescan Blocks".', 'kratt' ),
+				]
+			);
 		}
 
 		$result = Client::compose( $prompt, $editor_content, $catalog );
@@ -81,6 +97,9 @@ class ComposeController extends WP_REST_Controller {
 
 	/**
 	 * Entry point for the Abilities API.
+	 *
+	 * @param array<string, mixed> $args
+	 * @return array<string, mixed>
 	 */
 	public static function compose_from_ability( array $args ): array {
 		$catalog = BlockCatalog::get();

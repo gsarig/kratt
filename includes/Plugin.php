@@ -14,7 +14,7 @@ class Plugin {
 	private static ?self $instance = null;
 
 	public static function instance(): self {
-		if ( self::$instance === null ) {
+		if ( null === self::$instance ) {
 			self::$instance = new self();
 		}
 		return self::$instance;
@@ -32,6 +32,12 @@ class Plugin {
 		add_filter( 'plugin_action_links_' . plugin_basename( KRATT_FILE ), [ $this, 'add_action_links' ] );
 	}
 
+	/**
+	 * Prepends the Settings link to the plugin's action links on the plugins list page.
+	 *
+	 * @param array<int|string, string> $links Existing action links.
+	 * @return array<int|string, string>
+	 */
 	public function add_action_links( array $links ): array {
 		$settings_link = sprintf(
 			'<a href="%s">%s</a>',
@@ -136,6 +142,11 @@ class Plugin {
 		<?php
 	}
 
+	/**
+	 * Renders an HTML table of blocks for the settings page.
+	 *
+	 * @param array<string, mixed> $blocks Catalog entries to display.
+	 */
 	private function render_block_table( array $blocks ): void {
 		?>
 		<table class="widefat striped" style="margin-bottom:24px;">

@@ -28,18 +28,24 @@ if ( file_exists( KRATT_DIR . 'vendor/autoload.php' ) ) {
 	require_once KRATT_DIR . 'vendor/autoload.php';
 }
 
-add_action( 'plugins_loaded', function () {
-	if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-		add_action( 'admin_notices', function () {
-			printf(
-				'<div class="notice notice-error"><p>%s</p></div>',
-				esc_html__( 'Kratt requires WordPress 7.0 or later with an AI provider plugin active (Anthropic, Google, or OpenAI).', 'kratt' )
+add_action(
+	'plugins_loaded',
+	function () {
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			add_action(
+				'admin_notices',
+				function () {
+					printf(
+						'<div class="notice notice-error"><p>%s</p></div>',
+						esc_html__( 'Kratt requires WordPress 7.0 or later with an AI provider plugin active (Anthropic, Google, or OpenAI).', 'kratt' )
+					);
+				}
 			);
-		} );
-		return;
-	}
+			return;
+		}
 
-	\Kratt\Plugin::instance()->init();
-} );
+		\Kratt\Plugin::instance()->init();
+	}
+);
 
 register_activation_hook( __FILE__, [ \Kratt\Catalog\BlockCatalog::class, 'scan' ] );

@@ -9,6 +9,9 @@ class Client {
 	/**
 	 * Sends a composition request to the AI and returns the result.
 	 *
+	 * @param string               $user_prompt    The user's natural language request.
+	 * @param string               $editor_content Current editor content for context.
+	 * @param array<string, mixed> $catalog        The block catalog to pass to the AI.
 	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}
 	 */
 	public static function compose( string $user_prompt, string $editor_content, array $catalog ): array {
@@ -36,13 +39,19 @@ class Client {
 
 		$decoded = json_decode( $response, associative: true );
 
-		if ( json_last_error() !== JSON_ERROR_NONE || ! is_array( $decoded ) ) {
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
 		return $decoded;
 	}
 
+	/**
+	 * Returns a deterministic dummy response for use in KRATT_TEST_MODE.
+	 *
+	 * @param string $prompt The original user prompt, echoed into the heading.
+	 * @return array{blocks: array<array{name: string, attributes: array<string, mixed>}>}
+	 */
 	private static function dummy_response( string $prompt ): array {
 		return [
 			'blocks' => [

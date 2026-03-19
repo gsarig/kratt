@@ -1,0 +1,99 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-analysis:
+    name: Static Analysis (PHPStan + PHPCS)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer, cs2pr
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-v2-${{ runner.os }}-${{ hashFiles('**/composer.json', '**/composer.lock') }}
+          restore-keys: |
+            composer-v2-${{ runner.os }}-
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: composer audit
+      - run: vendor/bin/phpstan analyse --no-progress --error-format=checkstyle | cs2pr
+      - run: vendor/bin/phpcs --report=checkstyle | cs2pr
+
+  js-build:
+    name: JS Build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - run: npm audit --audit-level=high --omit=dev
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-assets
+          path: build/
+          retention-days: 1
+
+  phpunit:
+    name: PHPUnit (WP ${{ matrix.wp-version }}, PHP ${{ matrix.php-version }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        wp-version: ['6.7', 'latest']
+        php-version: ['8.1']
+    services:
+      db:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: wordpress_test
+          MYSQL_USER: wordpress
+          MYSQL_PASSWORD: wordpress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli
+          coverage: none
+      - uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-v2-${{ runner.os }}-${{ hashFiles('**/composer.json', '**/composer.lock') }}
+          restore-keys: |
+            composer-v2-${{ runner.os }}-
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ matrix.wp-version }}
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
+      - run: vendor/bin/phpunit
+        env:
+          WP_TESTS_DIR: /tmp/wordpress-tests-lib
