@@ -223,7 +223,7 @@ For example, the Out of the Box OpenStreetMap plugin registers an ability for it
 
 The AI can then insert a map pointing at a specific location when asked, rather than inserting an empty block with no centre set.
 
-**For plugin authors:** to make your block's attributes AI-readable, register a WordPress ability for your block and set `meta['block_name']` to your block's registered name. See `CONTRIBUTING.md` for details.
+**For plugin authors:** to make your block's attributes AI-readable, simply register a WordPress ability using standard practices with a namespace that matches your block name. No special metadata is required — Kratt resolves the association automatically. See `CONTRIBUTING.md` for details.
 
 ---
 

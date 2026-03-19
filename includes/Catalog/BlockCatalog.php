@@ -169,24 +169,23 @@ class BlockCatalog {
 	/**
 	 * Enriches catalog entries with attribute documentation from registered WordPress abilities.
 	 *
-	 * Blocks that declare a `block_name` in their ability's `meta` array receive attribute
-	 * descriptions derived from the ability's `input_schema`. This makes non-text attributes
-	 * (coordinates, zoom levels, enums, etc.) visible in the AI prompt so the model can
-	 * populate them reliably.
+	 * For each registered ability, Kratt resolves which block it belongs to by normalizing the
+	 * ability's namespace and comparing it against every block name in the catalog. Normalization
+	 * strips everything except lowercase alphanumerics, then checks whether the result equals the
+	 * concatenation of the block's namespace and slug after the same normalization.
 	 *
-	 * Plugin authors can associate an ability with a block by adding to the ability's `meta`:
+	 * Example: ability `ootb-openstreetmap/add-map-to-post` has namespace `ootb-openstreetmap`,
+	 * which normalizes to `ootbopenstreetmap`. Block `ootb/openstreetmap` normalizes to the same
+	 * string, so the match is found. If zero or more than one block matches, the ability is skipped.
 	 *
-	 *   'meta' => [
-	 *       'block_name'       => 'my-plugin/my-block',
-	 *       'block_attributes' => [
-	 *           // Explicit overrides for attrs that don't map 1:1 from ability params.
-	 *           'bounds' => [ 'type' => 'array', 'description' => 'Map centre as [[lat, lng]].' ],
-	 *       ],
-	 *   ],
+	 * Once matched, attribute descriptions are derived from the ability's `input_schema` properties.
+	 * Param names are converted from snake_case to camelCase to match block attribute conventions.
+	 * Only existing block attributes are enriched — no new attributes are invented.
 	 *
-	 * Ability param names are converted from snake_case to camelCase to match block attribute
-	 * conventions. Only existing block attributes are enriched; no new attributes are invented.
-	 * Attributes explicitly listed in `block_attributes` are applied first and take precedence.
+	 * Plugin authors can also supply explicit overrides via `meta['block_attributes']` for cases
+	 * where ability params do not map 1:1 to block attributes (e.g. `lat`/`lng` params that are
+	 * stored as a `bounds: [[lat, lng]]` attribute in the block). These overrides take precedence
+	 * over the auto-derived descriptions.
 	 *
 	 * @param array<string, mixed> $catalog Catalog to enrich.
 	 * @return array<string, mixed> Enriched catalog.
@@ -204,12 +203,12 @@ class BlockCatalog {
 		$abilities = wp_get_abilities();
 
 		foreach ( $abilities as $ability ) {
-			$block_name = $ability->get_meta_item( 'block_name' );
-			if ( empty( $block_name ) || ! isset( $catalog[ $block_name ] ) ) {
+			$block_name = self::resolve_block_for_ability( $ability, $catalog );
+			if ( null === $block_name ) {
 				continue;
 			}
 
-			// Apply explicit block_attributes overrides first.
+			// Apply explicit block_attributes overrides first (for params that don't map 1:1).
 			$manual = $ability->get_meta_item( 'block_attributes' ) ?? [];
 			foreach ( $manual as $attr_name => $attr_def ) {
 				$catalog[ $block_name ]['attributes'][ $attr_name ] = array_merge(
@@ -252,6 +251,44 @@ class BlockCatalog {
 		}
 
 		return $catalog;
+	}
+
+	/**
+	 * Resolves which catalog block a given ability belongs to, using name normalization.
+	 *
+	 * Strips the action segment from the ability name (everything after the first `/`), then
+	 * normalizes the namespace by removing all non-alphanumeric characters and lowercasing.
+	 * Each block name is normalized the same way (namespace + slug concatenated). If exactly
+	 * one block matches, that block is returned. Zero or multiple matches mean the association
+	 * is ambiguous, so null is returned and the ability is skipped.
+	 *
+	 * @param \WP_Ability          $ability The ability to resolve.
+	 * @param array<string, mixed> $catalog The current block catalog.
+	 * @return string|null The matched block name, or null if the match is ambiguous or absent.
+	 */
+	private static function resolve_block_for_ability( \WP_Ability $ability, array $catalog ): ?string {
+		$ability_name = $ability->get_name();
+		$slash_pos    = strpos( $ability_name, '/' );
+		if ( false === $slash_pos ) {
+			return null;
+		}
+
+		$normalize            = static fn( string $s ): string => preg_replace( '/[^a-z0-9]/', '', strtolower( $s ) ) ?? '';
+		$normalized_namespace = $normalize( substr( $ability_name, 0, $slash_pos ) );
+
+		$matches = [];
+		foreach ( $catalog as $block_name => $block ) {
+			$parts = explode( '/', $block_name, 2 );
+			if ( 2 !== count( $parts ) ) {
+				continue;
+			}
+			if ( $normalize( $parts[0] ) . $normalize( $parts[1] ) === $normalized_namespace ) {
+				$matches[] = $block_name;
+			}
+		}
+
+		// Ambiguous or no match — skip rather than guess.
+		return 1 === count( $matches ) ? $matches[0] : null;
 	}
 
 	/**

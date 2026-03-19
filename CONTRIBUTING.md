@@ -83,7 +83,9 @@ Do not add every block. Entries without meaningful hints or curated attribute de
 
 ## Ability schema integration
 
-Kratt can read attribute documentation directly from registered WordPress abilities. When a block's ability declares a `block_name` in its `meta`, Kratt enriches that block's catalog entry with descriptions from the ability's `input_schema`. This lets the AI reliably populate non-text attributes (coordinates, zoom levels, enums, etc.) that would otherwise be left empty.
+Kratt can read attribute documentation directly from registered WordPress abilities. When Kratt finds an ability whose name matches a block in the catalog, it enriches that block's catalog entry with descriptions from the ability's `input_schema`. This lets the AI reliably populate non-text attributes (coordinates, zoom levels, enums, etc.) that would otherwise be left empty.
+
+No special metadata is required in the ability registration. Kratt resolves the association automatically from the ability's name.
 
 ### How it works
 
@@ -91,20 +93,26 @@ Kratt can read attribute documentation directly from registered WordPress abilit
 
 1. Fires `wp_abilities_api_init` if it hasn't run yet, so all registered abilities are available.
 2. Iterates every `WP_Ability` instance returned by `wp_get_abilities()`.
-3. Reads `block_name` from the ability's `meta`. If it matches a block in the catalog, that block is enriched.
-4. Applies any explicit `block_attributes` overrides from the ability's `meta` first (for cases where ability params don't map 1:1 to block attrs).
+3. Resolves which block each ability belongs to by normalizing names (see below). If the match is ambiguous or absent, the ability is skipped.
+4. Applies any explicit `block_attributes` overrides from the ability's `meta` (optional — for cases where ability params don't map 1:1 to block attrs).
 5. Iterates the ability's `input_schema` properties, converts param names from `snake_case` to `camelCase`, and adds descriptions to any matching block attributes. Only existing block attributes are enriched — no new ones are invented.
 6. Sets a hint on the block if it doesn't already have one, telling the AI that the listed attributes are safe to set.
 
-The attribute filter in `format_for_prompt()` is updated to include non-string attributes that have a description, making ability-documented attrs visible in the AI prompt.
+The attribute filter in `format_for_prompt()` includes non-string attributes that have a description, making ability-documented attrs visible in the AI prompt.
+
+### Name matching
+
+The ability namespace (everything before the first `/`) is normalized by stripping all non-alphanumeric characters and lowercasing. Each block name (`namespace/slug`) is normalized the same way by concatenating its two parts. If exactly one block matches, the ability is associated with it. Zero or multiple matches mean the association is ambiguous and the ability is skipped.
+
+Example: ability `ootb-openstreetmap/add-map-to-post` has namespace `ootb-openstreetmap`, which normalizes to `ootbopenstreetmap`. Block `ootb/openstreetmap` normalizes to the same string — unambiguous match.
 
 ### Making your block ability-aware
 
-Register a WordPress ability for your block and add these keys to `meta`:
+Simply register a WordPress ability using standard practices, with a well-named namespace that matches your block name. Kratt picks it up automatically:
 
 ```php
 wp_register_ability(
-    'my-plugin/add-my-block',
+    'my-plugin/add-my-block',  // namespace "my-plugin" matches block "my/plugin"
     [
         'label'            => __( 'Add My Block', 'my-plugin' ),
         'description'      => __( 'Inserts a my-plugin/my-block into a post.', 'my-plugin' ),
@@ -116,23 +124,25 @@ wp_register_ability(
                 'zoom'    => [ 'type' => 'integer', 'description' => 'Zoom level (2-18).' ],
             ],
         ],
-        'meta' => [
-            'block_name'       => 'my-plugin/my-block',
-            'block_attributes' => [
-                // Declare attrs that don't map 1:1 from ability params.
-                // e.g. if your block stores coordinates as [[lat, lng]] instead of separate lat/lng params:
-                'bounds' => [
-                    'type'        => 'array',
-                    'description' => 'Centre as [[lat, lng]].',
-                ],
-            ],
-        ],
         'permission_callback' => fn() => current_user_can( 'edit_posts' ),
     ]
 );
 ```
 
-After adding `meta['block_name']`, trigger a catalog rescan via **Settings → Kratt → Rescan Blocks** or by deactivating and reactivating your plugin. Kratt will pick up the ability's documentation on the next scan.
+If your ability params don't map 1:1 to block attributes (e.g. separate `lat`/`lng` params stored as a `bounds: [[lat, lng]]` block attribute), you can supply explicit overrides via `meta['block_attributes']`:
+
+```php
+'meta' => [
+    'block_attributes' => [
+        'bounds' => [
+            'type'        => 'array',
+            'description' => 'Map centre as [[lat, lng]], e.g. [[37.97, 23.72]] for Athens.',
+        ],
+    ],
+],
+```
+
+After installing or updating a plugin that registers an ability, trigger a catalog rescan via **Settings → Kratt → Rescan Blocks**. The catalog is also rebuilt automatically when any plugin or theme is activated.
 
 ### What gets included in the prompt
 
