@@ -6,8 +6,9 @@ namespace Kratt\Settings;
 
 class Settings {
 
-	private const OPTION_CATALOG    = 'kratt_block_catalog';
-	private const OPTION_SCANNED_AT = 'kratt_catalog_scanned_at';
+	private const OPTION_CATALOG       = 'kratt_block_catalog';
+	private const OPTION_SCANNED_AT    = 'kratt_catalog_scanned_at';
+	private const OPTION_INSTRUCTIONS  = 'kratt_additional_instructions';
 
 	/**
 	 * Returns the stored block catalog, or an empty array if not yet scanned.
@@ -34,5 +35,12 @@ class Settings {
 	public static function get_catalog_scanned_at(): ?string {
 		$value = get_option( self::OPTION_SCANNED_AT, '' );
 		return '' !== $value ? $value : null;
+	}
+
+	/**
+	 * Returns the saved additional instructions string, or an empty string if not set.
+	 */
+	public static function get_additional_instructions(): string {
+		return (string) get_option( self::OPTION_INSTRUCTIONS, '' );
 	}
 }

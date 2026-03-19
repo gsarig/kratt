@@ -69,12 +69,19 @@ function KrattSidebar() {
 			const allowedBlocks =
 				Array.isArray( allowedBlockTypes ) ? allowedBlockTypes : null;
 
+			// Post context — post_type is always available even for unsaved posts.
+			const { getCurrentPostId, getCurrentPostType } = wp.data.select( 'core/editor' );
+			const postId   = getCurrentPostId() || 0;
+			const postType = getCurrentPostType() || '';
+
 			const response = await apiFetch( {
 				path: '/kratt/v1/compose',
 				method: 'POST',
 				data: {
 					prompt,
 					editor_content: editorContent,
+					post_id: postId,
+					post_type: postType,
 					...(allowedBlocks ? { allowed_blocks: allowedBlocks } : {}),
 				},
 			} );

@@ -6,6 +6,7 @@ namespace Kratt\REST;
 
 use Kratt\AI\Client;
 use Kratt\Catalog\BlockCatalog;
+use Kratt\Settings\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -41,6 +42,15 @@ class ComposeController extends WP_REST_Controller {
 						'items'   => [ 'type' => 'string' ],
 						'default' => null,
 					],
+					'post_id'        => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'post_type'      => [
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_key',
+					],
 				],
 			]
 		);
@@ -69,6 +79,8 @@ class ComposeController extends WP_REST_Controller {
 		$prompt         = $request->get_param( 'prompt' );
 		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
 		$allowed_blocks = $request->get_param( 'allowed_blocks' );
+		$post_id        = (int) $request->get_param( 'post_id' );
+		$post_type      = (string) $request->get_param( 'post_type' );
 
 		// Cap editor content to avoid excessive token usage.
 		if ( strlen( $editor_content ) > 8000 ) {
@@ -90,7 +102,8 @@ class ComposeController extends WP_REST_Controller {
 			);
 		}
 
-		$result = Client::compose( $prompt, $editor_content, $catalog );
+		$instructions = self::resolve_instructions( $post_id, $post_type );
+		$result       = Client::compose( $prompt, $editor_content, $catalog, $instructions );
 
 		return rest_ensure_response( $result );
 	}
@@ -108,10 +121,48 @@ class ComposeController extends WP_REST_Controller {
 			$catalog = BlockCatalog::filter_by_allowed( $catalog, $args['allowed_blocks'] );
 		}
 
+		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
+		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
+
 		return Client::compose(
 			$args['prompt'] ?? '',
 			$args['editor_content'] ?? '',
-			$catalog
+			$catalog,
+			self::resolve_instructions( $post_id, $post_type )
+		);
+	}
+
+	/**
+	 * Resolves the additional instructions to pass to the AI.
+	 *
+	 * Starts from the saved setting and passes it through the kratt_system_instructions
+	 * filter so that code can customise instructions per post type or context.
+	 *
+	 * @param int    $post_id   The current post ID (0 if unsaved).
+	 * @param string $post_type The current post type (always available from the editor).
+	 * @return string
+	 */
+	private static function resolve_instructions( int $post_id, string $post_type ): string {
+		$instructions = Settings::get_additional_instructions();
+
+		/**
+		 * Filters the additional instructions appended to the Kratt AI system prompt.
+		 *
+		 * @param string $instructions The saved instructions from Settings → Kratt.
+		 * @param array{post_id: int, post_type: string} $context {
+		 *     Context about the current editing session.
+		 *
+		 *     @type int    $post_id   The current post ID. 0 for unsaved posts.
+		 *     @type string $post_type The current post type slug.
+		 * }
+		 */
+		return (string) apply_filters(
+			'kratt_system_instructions',
+			$instructions,
+			[
+				'post_id'   => $post_id,
+				'post_type' => $post_type,
+			]
 		);
 	}
 }

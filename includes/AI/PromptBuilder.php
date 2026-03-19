@@ -11,17 +11,18 @@ class PromptBuilder {
 	/**
 	 * Builds the system prompt for the AI, including the block catalog and editor context.
 	 *
-	 * @param array<string, mixed> $catalog        Available blocks to include in the prompt.
-	 * @param string               $editor_content Current editor content sent as read-only context.
+	 * @param array<string, mixed> $catalog                 Available blocks to include in the prompt.
+	 * @param string               $editor_content          Current editor content sent as read-only context.
+	 * @param string               $additional_instructions Extra instructions appended after the Rules section.
 	 */
-	public static function build( array $catalog, string $editor_content = '' ): string {
+	public static function build( array $catalog, string $editor_content = '', string $additional_instructions = '' ): string {
 		$block_list = BlockCatalog::format_for_prompt( $catalog );
 
 		$editor_section = '' !== $editor_content
 			? "The editor currently contains the following blocks (read-only — do not modify existing blocks, only add new ones):\n\n" . $editor_content
 			: 'The editor is currently empty.';
 
-		return <<<PROMPT
+		$prompt = <<<PROMPT
 You are an assistant embedded in the WordPress Block Editor. Your sole job is to convert natural language requests into a JSON description of WordPress blocks to insert.
 
 ## Available Blocks
@@ -66,5 +67,11 @@ On failure or when the request cannot be fulfilled:
 7. If a request is genuinely impossible with the available blocks, return an error with a concrete suggestion of what the user can do instead.
 8. If a request is ambiguous, make the most reasonable assumption and proceed — do not ask clarifying questions.
 PROMPT;
+
+		if ( '' !== $additional_instructions ) {
+			$prompt .= "\n\n## Additional Instructions\n\n" . $additional_instructions;
+		}
+
+		return $prompt;
 	}
 }
