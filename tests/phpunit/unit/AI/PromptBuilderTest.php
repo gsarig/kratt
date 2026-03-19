@@ -113,4 +113,36 @@ class PromptBuilderTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'innerBlocks', $prompt );
 	}
+
+	// =========================================================================
+	// Additional instructions
+	// =========================================================================
+
+	public function test_no_additional_instructions_section_when_empty(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '' );
+
+		$this->assertStringNotContainsString( '## Additional Instructions', $prompt );
+	}
+
+	public function test_additional_instructions_section_appears_when_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', 'Avoid tables.' );
+
+		$this->assertStringContainsString( '## Additional Instructions', $prompt );
+	}
+
+	public function test_additional_instructions_content_is_included_in_prompt(): void {
+		$instructions = 'Prefer core/cover for hero sections. Avoid tables unless presenting product features.';
+		$prompt       = PromptBuilder::build( $this->minimal_catalog(), '', $instructions );
+
+		$this->assertStringContainsString( $instructions, $prompt );
+	}
+
+	public function test_additional_instructions_appear_after_rules_section(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', 'Custom rule.' );
+
+		$rules_pos        = strpos( $prompt, '## Rules' );
+		$instructions_pos = strpos( $prompt, '## Additional Instructions' );
+
+		$this->assertGreaterThan( $rules_pos, $instructions_pos );
+	}
 }

@@ -15,6 +15,7 @@ class SettingsTest extends WP_UnitTestCase {
 		parent::setUp();
 		delete_option( 'kratt_block_catalog' );
 		delete_option( 'kratt_catalog_scanned_at' );
+		delete_option( 'kratt_additional_instructions' );
 	}
 
 	public function test_get_catalog_returns_empty_array_when_not_set(): void {
@@ -78,5 +79,19 @@ class SettingsTest extends WP_UnitTestCase {
 		$catalog = Settings::get_catalog();
 		$this->assertIsArray( $catalog );
 		$this->assertEmpty( $catalog );
+	}
+
+	// =========================================================================
+	// Additional instructions
+	// =========================================================================
+
+	public function test_get_additional_instructions_returns_empty_string_when_not_set(): void {
+		$this->assertSame( '', Settings::get_additional_instructions() );
+	}
+
+	public function test_get_additional_instructions_returns_saved_value(): void {
+		update_option( 'kratt_additional_instructions', 'Avoid tables.' );
+
+		$this->assertSame( 'Avoid tables.', Settings::get_additional_instructions() );
 	}
 }
