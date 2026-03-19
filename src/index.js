@@ -3,14 +3,27 @@ import { registerPlugin } from '@wordpress/plugins';
 import { PluginSidebar } from '@wordpress/editor';
 
 const KrattIcon = (
-	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-		<rect x="7" y="11" width="10" height="9" rx="1" />
-		<path d="M9 11V8a3 3 0 0 1 6 0v3" />
-		<circle cx="10" cy="15" r="1" fill="currentColor" stroke="none" />
-		<circle cx="14" cy="15" r="1" fill="currentColor" stroke="none" />
-		<path d="M10 19h4" />
-		<path d="M12 5v2" />
-		<path d="M5 14h2M17 14h2" />
+	<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+		{ /* Straw / twigs sprouting from top of head */ }
+		<line x1="13" y1="3.5" x2="11.5" y2="1.5" />
+		<line x1="14.5" y1="3" x2="14.5" y2="1" />
+		<line x1="16" y1="3.5" x2="17.5" y2="1.5" />
+		<line x1="16.5" y1="4.5" x2="18.5" y2="3.5" />
+		{ /* Head */ }
+		<circle cx="14.5" cy="5.5" r="2" />
+		{ /* Body: two diagonal crossed sticks forming the torso */ }
+		<line x1="14" y1="7.5" x2="11" y2="14.5" />
+		<line x1="16" y1="8.5" x2="9" y2="13.5" />
+		{ /* Left arm extending to carry a plank */ }
+		<line x1="10.5" y1="11.5" x2="3.5" y2="9.5" />
+		{ /* Flat board / plank at the end of the arm */ }
+		<path d="M1.5 8.5 L4.5 8 L5 10 L2 10.5 Z" fill="currentColor" stroke="none" />
+		{ /* Hip bundle where legs attach */ }
+		<circle cx="11" cy="14.5" r="1" fill="currentColor" stroke="none" />
+		{ /* Three spindly legs */ }
+		<line x1="11" y1="15.5" x2="5" y2="23" />
+		<line x1="11" y1="15.5" x2="10" y2="23" />
+		<line x1="11" y1="15.5" x2="17.5" y2="22.5" />
 	</svg>
 );
 import { useState } from '@wordpress/element';
