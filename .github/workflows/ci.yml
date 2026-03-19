@@ -58,17 +58,22 @@ jobs:
           path: build/
           retention-days: 1
 
-  plugin-check:
-    name: Plugin Check
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: wordpress/plugin-check-action@v1
-        with:
-          build-dir: '.'
-          checks-to-skip: 'late_escaping'
+  # plugin-check is disabled until WordPress 7.0 is released.
+  # The plugin declares Requires at least: 7.0, which prevents activation on
+  # the current stable (6.x), causing plugin-check-action to fail at the
+  # wp plugin activate step. Re-enable this job once WP 7.0 ships.
+  #
+  # plugin-check:
+  #   name: Plugin Check
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: wordpress/plugin-check-action@v1
+  #       with:
+  #         build-dir: '.'
+  #         exclude-checks: 'late_escaping'
 
   phpunit:
     name: PHPUnit (WP ${{ matrix.wp-version }})
