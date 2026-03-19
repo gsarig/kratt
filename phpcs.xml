@@ -10,6 +10,9 @@
     <exclude-pattern>build/*</exclude-pattern>
     <exclude-pattern>tests/*</exclude-pattern>
 
+    <!-- Explicitly include sniffs that plugin-check enforces but WPCS does not bundle -->
+    <rule ref="Squiz.PHP.Heredoc"/>
+
     <rule ref="WordPress">
         <!-- Allow short array syntax [] instead of array() -->
         <exclude name="Universal.Arrays.DisallowShortArraySyntax"/>

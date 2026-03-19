@@ -3,8 +3,10 @@
 $_tests_dir = getenv( 'WP_TESTS_DIR' ) ?: '/tmp/wordpress-tests-lib';
 
 if ( ! file_exists( $_tests_dir . '/includes/functions.php' ) ) {
-	echo "Could not find {$_tests_dir}/includes/functions.php." . PHP_EOL;
-	echo "Run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress db latest" . PHP_EOL;
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CLI output, not HTML.
+	echo 'Could not find ' . $_tests_dir . '/includes/functions.php.' . PHP_EOL;
+	// phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CLI output, not HTML.
+	echo 'Run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress db latest' . PHP_EOL;
 	exit( 1 );
 }
 

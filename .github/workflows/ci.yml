@@ -58,6 +58,18 @@ jobs:
           path: build/
           retention-days: 1
 
+  plugin-check:
+    name: Plugin Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: wordpress/plugin-check-action@v1
+        with:
+          build-dir: '.'
+          checks-to-skip: 'late_escaping'
+
   phpunit:
     name: PHPUnit (WP ${{ matrix.wp-version }})
     runs-on: ubuntu-latest
