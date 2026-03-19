@@ -24,13 +24,5 @@ Any user with `edit_posts` can call `POST /kratt/v1/compose` without restriction
 
 ## Housekeeping
 
-### Clean up options on uninstall
-The following options persist in the database after the plugin is uninstalled:
-- `kratt_block_catalog`
-- `kratt_catalog_scanned_at`
-- `kratt_additional_instructions`
-
-An `uninstall.php` that calls `delete_option()` for each would leave the site clean.
-
 ### Enable plugin-check in CI
 The `plugin-check` job in `.github/workflows/ci.yml` is commented out because the plugin declares `Requires at least: 7.0` and the plugin-check action cannot activate it against the current stable WordPress. Uncomment the job once WordPress 7.0 is released.
