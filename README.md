@@ -207,4 +207,6 @@ Kratt registers a `kratt/insert-block` ability via the WordPress Abilities API o
 
 ## Name
 
-Kratt is a household spirit from Estonian and Finnish mythology, a helpful creature that fetches things and does work on your behalf, unseen. It seemed fitting.
+Kratt is a household spirit from Estonian and Finnish mythology. According to legend, a Kratt is assembled from whatever scraps are at hand — straw, sticks, old tools — and brought to life by making a pact with the devil. Once animated, it becomes an obedient servant that fetches things, carries loads, and does work on your behalf, tirelessly and unseen.
+
+The name came from *November* (2017), an Estonian film by Rainer Sarnet. Shot in stark black and white, it follows peasants in a 19th-century village who build and barter Kratts to survive the winter. It is a deeply strange and memorable film, and the image of a creature cobbled together from junk that nonetheless does exactly what you ask of it felt like the right metaphor for a block composer built on top of an AI.
