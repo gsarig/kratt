@@ -53,7 +53,7 @@ class ComposeController extends WP_REST_Controller {
 
 	public function create_item( $request ) {
 		$prompt         = $request->get_param( 'prompt' );
-		$editor_content = $request->get_param( 'editor_content' );
+		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
 		$allowed_blocks = $request->get_param( 'allowed_blocks' );
 
 		// Cap editor content to avoid excessive token usage.

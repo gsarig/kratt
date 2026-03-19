@@ -12,12 +12,12 @@ class Client {
 	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}
 	 */
 	public static function compose( string $user_prompt, string $editor_content, array $catalog ): array {
-		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
-			return [ 'error' => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ) ];
-		}
-
 		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
 			return self::dummy_response( $user_prompt );
+		}
+
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			return [ 'error' => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ) ];
 		}
 
 		$system_prompt = PromptBuilder::build( $catalog, $editor_content );
