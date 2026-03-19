@@ -81,6 +81,69 @@ Add or update an entry when:
 
 Do not add every block. Entries without meaningful hints or curated attribute descriptions add noise without improving AI output.
 
+## Ability schema integration
+
+Kratt can read attribute documentation directly from registered WordPress abilities. When a block's ability declares a `block_name` in its `meta`, Kratt enriches that block's catalog entry with descriptions from the ability's `input_schema`. This lets the AI reliably populate non-text attributes (coordinates, zoom levels, enums, etc.) that would otherwise be left empty.
+
+### How it works
+
+`BlockCatalog::enrich_from_abilities()` runs at the end of every catalog scan. It:
+
+1. Fires `wp_abilities_api_init` if it hasn't run yet, so all registered abilities are available.
+2. Iterates every `WP_Ability` instance returned by `wp_get_abilities()`.
+3. Reads `block_name` from the ability's `meta`. If it matches a block in the catalog, that block is enriched.
+4. Applies any explicit `block_attributes` overrides from the ability's `meta` first (for cases where ability params don't map 1:1 to block attrs).
+5. Iterates the ability's `input_schema` properties, converts param names from `snake_case` to `camelCase`, and adds descriptions to any matching block attributes. Only existing block attributes are enriched — no new ones are invented.
+6. Sets a hint on the block if it doesn't already have one, telling the AI that the listed attributes are safe to set.
+
+The attribute filter in `format_for_prompt()` is updated to include non-string attributes that have a description, making ability-documented attrs visible in the AI prompt.
+
+### Making your block ability-aware
+
+Register a WordPress ability for your block and add these keys to `meta`:
+
+```php
+wp_register_ability(
+    'my-plugin/add-my-block',
+    [
+        'label'            => __( 'Add My Block', 'my-plugin' ),
+        'description'      => __( 'Inserts a my-plugin/my-block into a post.', 'my-plugin' ),
+        'execute_callback' => 'my_plugin_execute',
+        'input_schema'     => [
+            'type'       => 'object',
+            'properties' => [
+                'post_id' => [ 'type' => 'integer', 'description' => '...' ],
+                'zoom'    => [ 'type' => 'integer', 'description' => 'Zoom level (2-18).' ],
+            ],
+        ],
+        'meta' => [
+            'block_name'       => 'my-plugin/my-block',
+            'block_attributes' => [
+                // Declare attrs that don't map 1:1 from ability params.
+                // e.g. if your block stores coordinates as [[lat, lng]] instead of separate lat/lng params:
+                'bounds' => [
+                    'type'        => 'array',
+                    'description' => 'Centre as [[lat, lng]].',
+                ],
+            ],
+        ],
+        'permission_callback' => fn() => current_user_can( 'edit_posts' ),
+    ]
+);
+```
+
+After adding `meta['block_name']`, trigger a catalog rescan via **Settings → Kratt → Rescan Blocks** or by deactivating and reactivating your plugin. Kratt will pick up the ability's documentation on the next scan.
+
+### What gets included in the prompt
+
+Only block attributes that exist in the block's registered schema are enriched — Kratt never invents attribute names. An attribute appears in the AI prompt when it meets any of these conditions:
+
+- Its type is `string` (always included).
+- It has an `enum` (shown as pipe-separated values).
+- It has a non-empty `description` (ability-backed attributes always have descriptions).
+
+Attributes that are integers, booleans, arrays, or objects without descriptions remain hidden from the AI, so the model cannot accidentally invent values for them.
+
 ## The AI prompt
 
 `PromptBuilder::build()` assembles the system prompt from:

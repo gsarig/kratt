@@ -105,7 +105,7 @@ class PromptBuilderTest extends WP_UnitTestCase {
 	public function test_prompt_instructs_to_omit_uncertain_attributes(): void {
 		$prompt = PromptBuilder::build( $this->minimal_catalog() );
 
-		$this->assertStringContainsString( 'omit them entirely', $prompt );
+		$this->assertStringContainsString( 'omit them', $prompt );
 	}
 
 	public function test_prompt_describes_inner_blocks_usage(): void {

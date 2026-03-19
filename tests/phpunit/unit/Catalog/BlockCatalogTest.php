@@ -251,4 +251,62 @@ class BlockCatalogTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( 'button|submit|reset', $output );
 	}
+
+	public function test_format_includes_non_string_attribute_when_it_has_description(): void {
+		$catalog = [
+			'acme/map' => [
+				'name'        => 'acme/map',
+				'source'      => 'custom',
+				'enabled'     => true,
+				'title'       => 'Acme Map',
+				'description' => 'An interactive map.',
+				'keywords'    => [],
+				'hint'        => '',
+				'dynamic'     => false,
+				'attributes'  => [
+					'zoom' => [
+						'type'        => 'integer',
+						'description' => 'Initial zoom level (2-18).',
+					],
+				],
+				'example'     => [],
+			],
+		];
+		$output = BlockCatalog::format_for_prompt( $catalog );
+
+		$this->assertStringContainsString( 'zoom', $output );
+		$this->assertStringContainsString( 'Initial zoom level', $output );
+	}
+
+	public function test_format_skips_non_string_attribute_without_description(): void {
+		$catalog = [
+			'acme/map' => [
+				'name'        => 'acme/map',
+				'source'      => 'custom',
+				'enabled'     => true,
+				'title'       => 'Acme Map',
+				'description' => 'An interactive map.',
+				'keywords'    => [],
+				'hint'        => '',
+				'dynamic'     => false,
+				'attributes'  => [
+					'zoom'    => [
+						'type'        => 'integer',
+						'description' => '',
+					],
+					'caption' => [
+						'type'        => 'string',
+						'description' => '',
+					],
+				],
+				'example'     => [],
+			],
+		];
+		$output = BlockCatalog::format_for_prompt( $catalog );
+
+		// zoom has no description and is not a string, so it should be excluded.
+		$this->assertStringNotContainsString( 'zoom', $output );
+		// caption is a string, so it is always included.
+		$this->assertStringContainsString( 'caption', $output );
+	}
 }

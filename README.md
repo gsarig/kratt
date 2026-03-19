@@ -201,12 +201,32 @@ Triggers a rescan of the block registry and saves the result. Returns a message 
 
 ## Abilities API
 
-Kratt registers a `kratt/insert-block` ability via the WordPress Abilities API on the `wp_abilities_api_init` hook. This makes Kratt's block insertion capability discoverable by other plugins and by future WordPress tooling that queries what AI-related actions a site supports.
+Kratt both registers and consumes the WordPress Abilities API.
+
+### Registering an ability
+
+Kratt registers a `kratt/insert-block` ability on the `wp_abilities_api_init` hook. This makes Kratt's block insertion capability discoverable by other plugins and by future WordPress tooling that queries what AI-related actions a site supports.
+
+### Reading abilities to enrich the block catalog
+
+When Kratt scans the block catalog, it also reads every registered ability and looks for ones that declare a `block_name` in their `meta`. When found, Kratt uses the ability's `input_schema` to add attribute documentation to that block's catalog entry.
+
+This matters because the AI can only reliably populate attributes it has clear documentation for. Without ability metadata, non-text attributes (coordinates, zoom levels, provider enums, etc.) are hidden from the AI and left at their block defaults. With it, the AI can set those attributes correctly from the user's natural language description.
+
+For example, the Out of the Box OpenStreetMap plugin registers an ability for its block. When Kratt scans the catalog on a site that has the plugin installed, the map block gains documented attributes:
+
+- `zoom` (integer): Initial zoom level (2-18).
+- `bounds` (array): Map centre as [[lat, lng]], e.g. [[37.97, 23.72]] for Athens.
+- `provider` (openstreetmap|mapbox): Tile provider.
+- `mapType` (marker|polygon|polyline): Map type.
+- and more.
+
+The AI can then insert a map pointing at a specific location when asked, rather than inserting an empty block with no centre set.
+
+**For plugin authors:** to make your block's attributes AI-readable, register a WordPress ability for your block and set `meta['block_name']` to your block's registered name. See `CONTRIBUTING.md` for details.
 
 ---
 
 ## Name
 
-Kratt is a household spirit from Estonian and Finnish mythology. According to legend, a Kratt is assembled from whatever scraps are at hand — straw, sticks, old tools — and brought to life by making a pact with the devil. Once animated, it becomes an obedient servant that fetches things, carries loads, and does work on your behalf, tirelessly and unseen.
-
-The name came from *November* (2017), an Estonian film by Rainer Sarnet. Shot in stark black and white, it follows peasants in a 19th-century village who build and barter Kratts to survive the winter. It is a deeply strange and memorable film, and the image of a creature cobbled together from junk that nonetheless does exactly what you ask of it felt like the right metaphor for a block composer built on top of an AI.
+**Kratt** is a household spirit from Estonian and Finnish mythology, which I came across watching a [weird Estonian film](https://en.wikipedia.org/wiki/November_(2017_film)) and found the concept fascinating. According to legend, a Kratt is assembled from whatever scraps are at hand — straw, sticks, old tools — and brought to life by making a pact with the devil. Once animated, it becomes an obedient servant that fetches things, carries loads, and does work on your behalf, tirelessly and unseen.
