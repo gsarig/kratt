@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name to rerun'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine tag name
+        id: determine_tag
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            tag="${{ inputs.tag_name }}"
+          else
+            tag="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$tag" >> $GITHUB_ENV
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Build JS assets
+        run: npm ci && npm run build
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer
+          coverage: none
+
+      - name: Install production Composer dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare plugin ZIP
+        run: |
+          plugin_name="kratt"
+          mkdir -p "$plugin_name"
+
+          if [[ -f ".distignore" ]]; then
+            rsync_exclude_option="--exclude-from=.distignore"
+          else
+            rsync_exclude_option=""
+          fi
+
+          rsync -av $rsync_exclude_option \
+            --exclude="${plugin_name}-${tag}.zip" \
+            --exclude="$plugin_name/" ./ "$plugin_name/"
+
+          zip -r "${plugin_name}-${tag}.zip" "$plugin_name"
+
+      - name: Create draft release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$tag" \
+            --title="Release $tag" \
+            --draft \
+            -- "kratt-${tag}.zip"
