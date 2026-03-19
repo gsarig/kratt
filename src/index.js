@@ -145,10 +145,8 @@ function KrattSidebar() {
 			}
 			insertBlocks( parsedBlocks, index, rootClientId );
 
-			addMessage(
-				'assistant',
-				`Added ${ parsedBlocks.length } block${ parsedBlocks.length !== 1 ? 's' : '' } to the editor.`
-			);
+			const summary = `Added ${ parsedBlocks.length } block${ parsedBlocks.length !== 1 ? 's' : '' } to the editor.`;
+			addMessage( 'assistant', summary, false, response.note ?? null );
 		} catch ( error ) {
 			addMessage( 'assistant', error?.message ?? 'Something went wrong.', true );
 		} finally {
