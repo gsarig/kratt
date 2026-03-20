@@ -191,6 +191,21 @@ The prompt instructs the AI to respond with raw JSON only. `Client::compose()` d
 
 Define `KRATT_TEST_MODE` as `true` (in `wp-config.php` or the test bootstrap) to skip the AI call entirely. `Client::compose()` returns a deterministic dummy response — a heading and a paragraph — so you can develop and test without an API key or network access.
 
+The dummy response passes through the full `apply_block_attribute_transforms()` pipeline, so registered transforms are exercised even in test mode.
+
+To override which blocks the dummy returns — for example, to test a specific block's transform without touching the plugin — use the `kratt_dummy_response` filter:
+
+```php
+add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): array {
+    return [
+        [
+            'name'       => 'ootb/openstreetmap',
+            'attributes' => [ 'markers' => [ [ 'lat' => 38.9519, 'lng' => 20.7322 ] ] ],
+        ],
+    ];
+}, 10, 2 );
+```
+
 ## Running tests
 
 Install dependencies and run the full suite:

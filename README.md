@@ -155,6 +155,27 @@ Those settings are controlled by the provider plugin, not Kratt. Kratt simply ca
 
 ## Filter hooks
 
+### `kratt_dummy_response`
+
+```php
+apply_filters( 'kratt_dummy_response', array $blocks, string $prompt )
+```
+
+Only fires when `KRATT_TEST_MODE` is `true`. Lets you override the blocks returned by the dummy response without editing the plugin — useful for testing how a specific block and its transforms behave end-to-end.
+
+```php
+add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): array {
+    return [
+        [
+            'name'       => 'ootb/openstreetmap',
+            'attributes' => [ 'markers' => [ [ 'lat' => 38.9519, 'lng' => 20.7322 ] ] ],
+        ],
+    ];
+}, 10, 2 );
+```
+
+---
+
 ### `kratt_block_attribute_transform`
 
 ```php

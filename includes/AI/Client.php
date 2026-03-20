@@ -139,22 +139,24 @@ class Client {
 	 * @return array{blocks: array<array{name: string, attributes: array<string, mixed>}>}
 	 */
 	private static function dummy_response( string $prompt ): array {
-		return [
-			'blocks' => [
-				[
-					'name'       => 'core/heading',
-					'attributes' => [
-						'level'   => 2,
-						'content' => 'Test mode: "' . $prompt . '"',
-					],
-				],
-				[
-					'name'       => 'core/paragraph',
-					'attributes' => [
-						'content' => 'This is a dummy response from Kratt test mode. No tokens were used.',
-					],
+		$blocks = [
+			[
+				'name'       => 'core/heading',
+				'attributes' => [
+					'level'   => 2,
+					'content' => 'Test mode: "' . $prompt . '"',
 				],
 			],
+			[
+				'name'       => 'core/paragraph',
+				'attributes' => [
+					'content' => 'This is a dummy response from Kratt test mode. No tokens were used.',
+				],
+			],
+		];
+
+		return [
+			'blocks' => apply_filters( 'kratt_dummy_response', $blocks, $prompt ),
 		];
 	}
 }
