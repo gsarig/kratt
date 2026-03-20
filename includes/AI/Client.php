@@ -136,7 +136,7 @@ class Client {
 	 * Returns a deterministic dummy response for use in KRATT_TEST_MODE.
 	 *
 	 * @param string $prompt The original user prompt, echoed into the heading.
-	 * @return array{blocks: array<array{name: string, attributes: array<string, mixed>}>}
+	 * @return array{blocks: array<mixed>}
 	 */
 	private static function dummy_response( string $prompt ): array {
 		$blocks = [
