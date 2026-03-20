@@ -126,6 +126,17 @@ class BlockCatalog {
 					if ( ! empty( $attr['enum'] ) ) {
 						$type = implode( '|', $attr['enum'] );
 					}
+					if ( ! empty( $attr['items'] ) ) {
+						$item_parts = [];
+						foreach ( $attr['items'] as $prop_name => $prop_schema ) {
+							$prop_type = $prop_schema['type'] ?? 'string';
+							$prop_desc = $prop_schema['description'] ?? '';
+							$item_parts[] = sprintf( '%s (%s)%s', $prop_name, $prop_type, $prop_desc ? ': ' . $prop_desc : '' );
+						}
+						if ( $item_parts ) {
+							$attr_desc .= ( $attr_desc ? ' ' : '' ) . 'Each item: ' . implode( '; ', $item_parts ) . '.';
+						}
+					}
 					$attr_parts[] = sprintf( '%s (%s)%s', $attr_name, $type, $attr_desc ? ': ' . $attr_desc : '' );
 				}
 				if ( $attr_parts ) {
@@ -204,6 +215,9 @@ class BlockCatalog {
 			}
 
 			// Derive descriptions from input_schema properties via snake_to_camel mapping.
+			// All params with descriptions are surfaced — including those that don't correspond
+			// to a block attribute — because ability params are inputs to the execute_callback,
+			// not a 1:1 map of block attributes. The AI reads descriptions and follows them.
 			$properties = $ability->get_input_schema()['properties'] ?? [];
 			foreach ( $properties as $param_name => $param_schema ) {
 				if ( 'post_id' === $param_name ) {
@@ -213,15 +227,34 @@ class BlockCatalog {
 				$attr_name   = self::snake_to_camel( $param_name );
 				$description = $param_schema['description'] ?? '';
 
-				if ( ! $description || ! isset( $catalog[ $block_name ]['attributes'][ $attr_name ] ) ) {
-					continue; // Only enrich existing attrs; never invent new ones.
+				if ( ! $description ) {
+					continue;
 				}
 
-				if ( empty( $catalog[ $block_name ]['attributes'][ $attr_name ]['description'] ) ) {
-					$catalog[ $block_name ]['attributes'][ $attr_name ]['description'] = $description;
+				if ( isset( $catalog[ $block_name ]['attributes'][ $attr_name ] ) ) {
+					// Enrich existing block attribute.
+					if ( empty( $catalog[ $block_name ]['attributes'][ $attr_name ]['description'] ) ) {
+						$catalog[ $block_name ]['attributes'][ $attr_name ]['description'] = $description;
+					}
+					if ( ! isset( $catalog[ $block_name ]['attributes'][ $attr_name ]['enum'] ) && isset( $param_schema['enum'] ) ) {
+						$catalog[ $block_name ]['attributes'][ $attr_name ]['enum'] = $param_schema['enum'];
+					}
+				} else {
+					// Param has no matching block attribute — add it so the AI sees its description.
+					$catalog[ $block_name ]['attributes'][ $attr_name ] = [
+						'type'        => $param_schema['type'] ?? 'string',
+						'description' => $description,
+					];
+					if ( isset( $param_schema['enum'] ) ) {
+						$catalog[ $block_name ]['attributes'][ $attr_name ]['enum'] = $param_schema['enum'];
+					}
 				}
-				if ( ! isset( $catalog[ $block_name ]['attributes'][ $attr_name ]['enum'] ) && isset( $param_schema['enum'] ) ) {
-					$catalog[ $block_name ]['attributes'][ $attr_name ]['enum'] = $param_schema['enum'];
+
+				// Propagate items schema for array params so the AI knows the object shape.
+				if ( isset( $param_schema['items']['properties'] )
+					&& ! isset( $catalog[ $block_name ]['attributes'][ $attr_name ]['items'] )
+				) {
+					$catalog[ $block_name ]['attributes'][ $attr_name ]['items'] = $param_schema['items']['properties'];
 				}
 			}
 

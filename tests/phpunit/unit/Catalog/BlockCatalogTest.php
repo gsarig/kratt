@@ -278,6 +278,37 @@ class BlockCatalogTest extends WP_UnitTestCase {
 		$this->assertStringContainsString( 'Initial zoom level', $output );
 	}
 
+	public function test_format_includes_items_schema_inline(): void {
+		$catalog = [
+			'acme/map' => [
+				'name'        => 'acme/map',
+				'source'      => 'custom',
+				'enabled'     => true,
+				'title'       => 'Acme Map',
+				'description' => 'An interactive map.',
+				'keywords'    => [],
+				'hint'        => '',
+				'dynamic'     => false,
+				'attributes'  => [
+					'markers' => [
+						'type'        => 'array',
+						'description' => 'List of markers.',
+						'items'       => [
+							'lat' => [ 'type' => 'number', 'description' => 'Marker latitude.' ],
+							'lng' => [ 'type' => 'number', 'description' => 'Marker longitude.' ],
+						],
+					],
+				],
+				'example'     => [],
+			],
+		];
+		$output = BlockCatalog::format_for_prompt( $catalog );
+
+		$this->assertStringContainsString( 'Each item:', $output );
+		$this->assertStringContainsString( 'lat (number): Marker latitude.', $output );
+		$this->assertStringContainsString( 'lng (number): Marker longitude.', $output );
+	}
+
 	public function test_format_skips_non_string_attribute_without_description(): void {
 		$catalog = [
 			'acme/map' => [
