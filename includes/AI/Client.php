@@ -46,6 +46,7 @@ class Client {
 
 		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
 			$decoded['blocks'] = self::filter_unknown_blocks( $decoded['blocks'], $catalog );
+			$decoded['blocks'] = self::apply_block_attribute_transforms( $decoded['blocks'] );
 		}
 
 		return $decoded;
@@ -93,6 +94,37 @@ class Client {
 		}
 
 		return $valid;
+	}
+
+	/**
+	 * Applies the kratt_block_attribute_transform filter to each block's attributes.
+	 *
+	 * Runs after filter_unknown_blocks(). Allows built-in and third-party handlers
+	 * to convert AI-output attributes into the real block attribute format before
+	 * blocks reach the editor (e.g. lat/lng → bounds for map blocks).
+	 *
+	 * @param array<int, mixed> $blocks Blocks from the AI response.
+	 * @return array<int, mixed>
+	 */
+	public static function apply_block_attribute_transforms( array $blocks ): array {
+		foreach ( $blocks as &$block ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) ) {
+				continue;
+			}
+
+			$block['attributes'] = apply_filters(
+				'kratt_block_attribute_transform',
+				$block['attributes'] ?? [],
+				$block['name']
+			);
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = self::apply_block_attribute_transforms( $block['innerBlocks'] );
+			}
+		}
+		unset( $block );
+
+		return $blocks;
 	}
 
 	/**

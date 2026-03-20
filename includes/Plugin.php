@@ -5,6 +5,7 @@ declare( strict_types=1 );
 namespace Kratt;
 
 use Kratt\Abilities\InsertBlockAbility;
+use Kratt\AI\BlockAttributeTransforms;
 use Kratt\Editor\Sidebar;
 use Kratt\REST\CatalogController;
 use Kratt\REST\ComposeController;
@@ -31,6 +32,7 @@ class Plugin {
 		add_action( 'activated_plugin', [ Catalog\BlockCatalog::class, 'scan' ] );
 		add_action( 'after_switch_theme', [ Catalog\BlockCatalog::class, 'scan' ] );
 		add_filter( 'plugin_action_links_' . plugin_basename( KRATT_FILE ), [ $this, 'add_action_links' ] );
+		add_filter( 'kratt_block_attribute_transform', [ BlockAttributeTransforms::class, 'ootb_openstreetmap' ], 10, 2 );
 	}
 
 	/**
