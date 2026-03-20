@@ -194,6 +194,8 @@ function KrattSidebar() {
 					{ messages.length === 0 && (
 						<p className="kratt-empty-state">
 							{ __( "Describe the blocks you'd like to add to the editor.", 'kratt' ) }
+							<br />
+							<em>{ __( 'Example: "Add a hero, then an FAQ section."', 'kratt' ) }</em>
 						</p>
 					) }
 					{ olderMessages.length > 0 && (
