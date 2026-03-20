@@ -42,15 +42,15 @@ The catalog is built from the WordPress block registry at activation time. It te
 
 ### 1. Install Kratt
 
-Upload the plugin folder to `wp-content/plugins/` and activate it via **Plugins → Installed Plugins**.
+Download the latest release zip from the [Releases page](https://github.com/gsarig/kratt/releases), upload it to `wp-content/plugins/`, and activate it via **Plugins → Installed Plugins**.
 
 ### 2. Install an AI provider plugin
 
 Kratt uses the WP AI Client, which is part of WordPress 7.0. To provide an actual AI model, you need a provider plugin. Available options:
 
 - [AI Provider for Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic/)
-- AI Provider for Google (coming soon)
-- AI Provider for OpenAI (coming soon)
+- [AI Provider for Google](https://wordpress.org/plugins/ai-provider-for-google/)
+- [AI Provider for OpenAI](https://wordpress.org/plugins/ai-provider-for-openai/)
 
 Install and activate one of these.
 
