@@ -17,7 +17,9 @@ class Client {
 	 */
 	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '' ): array {
 		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
-			return self::dummy_response( $user_prompt );
+			$dummy              = self::dummy_response( $user_prompt );
+			$dummy['blocks']    = self::apply_block_attribute_transforms( $dummy['blocks'] );
+			return $dummy;
 		}
 
 		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {

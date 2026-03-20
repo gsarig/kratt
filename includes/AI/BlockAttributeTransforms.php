@@ -40,7 +40,8 @@ class BlockAttributeTransforms {
 		$lng = $attributes['lng'] ?? null;
 
 		if ( is_numeric( $lat ) && is_numeric( $lng ) ) {
-			$attributes['bounds'] = [ [ (float) $lat, (float) $lng ] ];
+			$attributes['bounds']            = [ [ (float) $lat, (float) $lng ] ];
+			$attributes['showDefaultBounds'] = false;
 			unset( $attributes['lat'], $attributes['lng'] );
 			return $attributes;
 		}
@@ -53,7 +54,8 @@ class BlockAttributeTransforms {
 				&& is_numeric( $first_marker['lat'] ?? null )
 				&& is_numeric( $first_marker['lng'] ?? null )
 			) {
-				$attributes['bounds'] = [ [ (float) $first_marker['lat'], (float) $first_marker['lng'] ] ];
+				$attributes['bounds']            = [ [ (float) $first_marker['lat'], (float) $first_marker['lng'] ] ];
+				$attributes['showDefaultBounds'] = false;
 			}
 		}
 
