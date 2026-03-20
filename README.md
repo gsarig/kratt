@@ -153,6 +153,58 @@ Those settings are controlled by the provider plugin, not Kratt. Kratt simply ca
 
 ---
 
+## Filter hooks
+
+### `kratt_dummy_response`
+
+```php
+apply_filters( 'kratt_dummy_response', array $blocks, string $prompt )
+```
+
+Only fires when `KRATT_TEST_MODE` is `true`. Lets you override the blocks returned by the dummy response without editing the plugin — useful for testing how a specific block and its transforms behave end-to-end.
+
+```php
+add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): array {
+    return [
+        [
+            'name'       => 'ootb/openstreetmap',
+            'attributes' => [ 'markers' => [ [ 'lat' => 38.9519, 'lng' => 20.7322 ] ] ],
+        ],
+    ];
+}, 10, 2 );
+```
+
+---
+
+### `kratt_block_attribute_transform`
+
+```php
+// Parameters: array $attributes, string $block_name
+// Returns:    array $attributes (modified)
+apply_filters( 'kratt_block_attribute_transform', $attributes, $block_name );
+```
+
+Runs on every block in the AI response before it reaches the editor. Use this to convert AI-output attributes into the format the block actually expects — for example, mapping virtual ability params to a different attribute shape, or setting companion attributes that must change together.
+
+```php
+add_filter(
+    'kratt_block_attribute_transform',
+    function ( array $attributes, string $block_name ): array {
+        if ( 'my-plugin/my-block' !== $block_name ) {
+            return $attributes;
+        }
+        // transform attributes here
+        return $attributes;
+    },
+    10,
+    2
+);
+```
+
+Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` for details on when and how to write your own.
+
+---
+
 ## REST API
 
 Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).

@@ -17,7 +17,9 @@ class Client {
 	 */
 	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '' ): array {
 		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
-			return self::dummy_response( $user_prompt );
+			$dummy              = self::dummy_response( $user_prompt );
+			$dummy['blocks']    = self::apply_block_attribute_transforms( $dummy['blocks'] );
+			return $dummy;
 		}
 
 		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
@@ -46,6 +48,7 @@ class Client {
 
 		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
 			$decoded['blocks'] = self::filter_unknown_blocks( $decoded['blocks'], $catalog );
+			$decoded['blocks'] = self::apply_block_attribute_transforms( $decoded['blocks'] );
 		}
 
 		return $decoded;
@@ -81,7 +84,7 @@ class Client {
 		$valid = [];
 
 		foreach ( $blocks as $block ) {
-			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! isset( $catalog[ $block['name'] ] ) ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! is_string( $block['name'] ) || ! isset( $catalog[ $block['name'] ] ) ) {
 				continue;
 			}
 
@@ -96,28 +99,66 @@ class Client {
 	}
 
 	/**
+	 * Applies the kratt_block_attribute_transform filter to each block's attributes.
+	 *
+	 * Runs after filter_unknown_blocks(). Allows built-in and third-party handlers
+	 * to convert AI-output attributes into the real block attribute format before
+	 * blocks reach the editor (e.g. lat/lng → bounds for map blocks).
+	 *
+	 * @param array<int, mixed> $blocks Blocks from the AI response.
+	 * @return array<int, mixed>
+	 */
+	public static function apply_block_attribute_transforms( array $blocks ): array {
+		foreach ( $blocks as &$block ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! is_string( $block['name'] ) ) {
+				continue;
+			}
+
+			$attributes = $block['attributes'] ?? [];
+			if ( ! is_array( $attributes ) ) {
+				$attributes = [];
+			}
+
+			$filtered = apply_filters( 'kratt_block_attribute_transform', $attributes, $block['name'] );
+
+			$block['attributes'] = is_array( $filtered ) ? $filtered : $attributes;
+
+			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
+				$block['innerBlocks'] = self::apply_block_attribute_transforms( $block['innerBlocks'] );
+			}
+		}
+		unset( $block );
+
+		return $blocks;
+	}
+
+	/**
 	 * Returns a deterministic dummy response for use in KRATT_TEST_MODE.
 	 *
 	 * @param string $prompt The original user prompt, echoed into the heading.
-	 * @return array{blocks: array<array{name: string, attributes: array<string, mixed>}>}
+	 * @return array{blocks: array<mixed>}
 	 */
 	private static function dummy_response( string $prompt ): array {
-		return [
-			'blocks' => [
-				[
-					'name'       => 'core/heading',
-					'attributes' => [
-						'level'   => 2,
-						'content' => 'Test mode: "' . $prompt . '"',
-					],
-				],
-				[
-					'name'       => 'core/paragraph',
-					'attributes' => [
-						'content' => 'This is a dummy response from Kratt test mode. No tokens were used.',
-					],
+		$blocks = [
+			[
+				'name'       => 'core/heading',
+				'attributes' => [
+					'level'   => 2,
+					'content' => 'Test mode: "' . $prompt . '"',
 				],
 			],
+			[
+				'name'       => 'core/paragraph',
+				'attributes' => [
+					'content' => 'This is a dummy response from Kratt test mode. No tokens were used.',
+				],
+			],
+		];
+
+		$filtered = apply_filters( 'kratt_dummy_response', $blocks, $prompt );
+
+		return [
+			'blocks' => is_array( $filtered ) ? $filtered : $blocks,
 		];
 	}
 }

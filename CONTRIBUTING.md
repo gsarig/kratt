@@ -94,9 +94,8 @@ No special metadata is required in the ability registration. Kratt resolves the 
 1. Fires `wp_abilities_api_init` if it hasn't run yet, so all registered abilities are available.
 2. Iterates every `WP_Ability` instance returned by `wp_get_abilities()`.
 3. Resolves which block each ability belongs to by normalizing names (see below). If the match is ambiguous or absent, the ability is skipped.
-4. Applies any explicit `block_attributes` overrides from the ability's `meta` (optional — for cases where ability params don't map 1:1 to block attrs).
-5. Iterates the ability's `input_schema` properties, converts param names from `snake_case` to `camelCase`, and adds descriptions to any matching block attributes. Only existing block attributes are enriched — no new ones are invented.
-6. Sets a hint on the block if it doesn't already have one, telling the AI that the listed attributes are safe to set.
+4. Iterates the ability's `input_schema` properties, converts param names from `snake_case` to `camelCase`, and adds descriptions to matching block attributes. Params with descriptions but no matching block attribute are added as virtual attributes — the AI reads their descriptions and follows them.
+5. Sets a hint on the block if it doesn't already have one, telling the AI that the listed attributes are safe to set.
 
 The attribute filter in `format_for_prompt()` includes non-string attributes that have a description, making ability-documented attrs visible in the AI prompt.
 
@@ -133,13 +132,54 @@ After installing or updating a plugin that registers an ability, trigger a catal
 
 ### What gets included in the prompt
 
-Only block attributes that exist in the block's registered schema are enriched — Kratt never invents attribute names. An attribute appears in the AI prompt when it meets any of these conditions:
+Ability params that match an existing block attribute enrich it with a description. Params with no matching block attribute are added as virtual prompt-only attributes — they appear in the AI prompt and the AI follows their descriptions, but they are not real block attributes and must be transformed into the correct shape before the block is inserted (see Block attribute transforms below).
+
+An attribute or virtual param appears in the AI prompt when it meets any of these conditions:
 
 - Its type is `string` (always included).
 - It has an `enum` (shown as pipe-separated values).
 - It has a non-empty `description` (ability-backed attributes always have descriptions).
 
 Attributes that are integers, booleans, arrays, or objects without descriptions remain hidden from the AI, so the model cannot accidentally invent values for them.
+
+## Block attribute transforms
+
+Ability input_schema params do not always map 1:1 to block attributes. Virtual params like `lat`/`lng` may need converting to a different format (`bounds`), or a block may require companion attributes to be set alongside the primary one (e.g. `showDefaultBounds: false`). Kratt handles this with a WordPress filter applied after the AI response is decoded and validated.
+
+### The filter
+
+```php
+// Parameters: array $attributes, string $block_name
+// Returns:    array $attributes (modified)
+apply_filters( 'kratt_block_attribute_transform', $attributes, $block_name );
+```
+
+Runs once per block in the AI response (including inner blocks), after unknown blocks are removed. Return the modified attributes array. The filter is also applied to the dummy response in test mode, so the full pipeline can be exercised without a live AI call.
+
+### Built-in handlers
+
+`BlockAttributeTransforms` ships handlers for blocks where the mismatch between ability params and block attributes is non-obvious. Currently:
+
+- **`ootb/openstreetmap`** — converts `lat`/`lng` to `bounds: [[lat, lng]]` and sets `showDefaultBounds: false`. When `lat`/`lng` are absent (the AI omits them when placing markers, per the ability docs), derives `bounds` from the first marker instead.
+
+### Adding your own handler
+
+```php
+add_filter(
+    'kratt_block_attribute_transform',
+    function ( array $attributes, string $block_name ): array {
+        if ( 'my-plugin/my-block' !== $block_name ) {
+            return $attributes;
+        }
+        // transform attributes here
+        return $attributes;
+    },
+    10,
+    2
+);
+```
+
+The threshold for a built-in handler is: the block is widely used, the mismatch is non-obvious, and there is no other way to resolve it. Plugin authors can ship their own handler without any coordination with Kratt.
 
 ## The AI prompt
 
@@ -154,6 +194,21 @@ The prompt instructs the AI to respond with raw JSON only. `Client::compose()` d
 ## Test mode
 
 Define `KRATT_TEST_MODE` as `true` (in `wp-config.php` or the test bootstrap) to skip the AI call entirely. `Client::compose()` returns a deterministic dummy response — a heading and a paragraph — so you can develop and test without an API key or network access.
+
+The dummy response passes through the full `apply_block_attribute_transforms()` pipeline, so registered transforms are exercised even in test mode.
+
+To override which blocks the dummy returns — for example, to test a specific block's transform without touching the plugin — use the `kratt_dummy_response` filter:
+
+```php
+add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): array {
+    return [
+        [
+            'name'       => 'ootb/openstreetmap',
+            'attributes' => [ 'markers' => [ [ 'lat' => 38.9519, 'lng' => 20.7322 ] ] ],
+        ],
+    ];
+}, 10, 2 );
+```
 
 ## Running tests
 
