@@ -147,7 +147,9 @@ Ability input_schema params do not always map 1:1 to block attributes. Virtual p
 ### The filter
 
 ```php
-apply_filters( 'kratt_block_attribute_transform', array $attributes, string $block_name )
+// Parameters: array $attributes, string $block_name
+// Returns:    array $attributes (modified)
+apply_filters( 'kratt_block_attribute_transform', $attributes, $block_name );
 ```
 
 Runs once per block in the AI response (including inner blocks), after unknown blocks are removed. Return the modified attributes array. The filter is also applied to the dummy response in test mode, so the full pipeline can be exercised without a live AI call.

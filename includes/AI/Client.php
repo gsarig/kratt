@@ -84,7 +84,7 @@ class Client {
 		$valid = [];
 
 		foreach ( $blocks as $block ) {
-			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! isset( $catalog[ $block['name'] ] ) ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! is_string( $block['name'] ) || ! isset( $catalog[ $block['name'] ] ) ) {
 				continue;
 			}
 
@@ -121,7 +121,7 @@ class Client {
 
 			$filtered = apply_filters( 'kratt_block_attribute_transform', $attributes, $block['name'] );
 
-			$block['attributes'] = is_array( $filtered ) ? $filtered : [];
+			$block['attributes'] = is_array( $filtered ) ? $filtered : $attributes;
 
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
 				$block['innerBlocks'] = self::apply_block_attribute_transforms( $block['innerBlocks'] );

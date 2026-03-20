@@ -179,7 +179,9 @@ add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): a
 ### `kratt_block_attribute_transform`
 
 ```php
-apply_filters( 'kratt_block_attribute_transform', array $attributes, string $block_name )
+// Parameters: array $attributes, string $block_name
+// Returns:    array $attributes (modified)
+apply_filters( 'kratt_block_attribute_transform', $attributes, $block_name );
 ```
 
 Runs on every block in the AI response before it reaches the editor. Use this to convert AI-output attributes into the format the block actually expects — for example, mapping virtual ability params to a different attribute shape, or setting companion attributes that must change together.
