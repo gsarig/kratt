@@ -12,7 +12,7 @@ Two distinct layers:
 
 ## Coding standards
 
-- **CLAUDE.md** is the authoritative source of coding rules for this project. All review
+- **CONTRIBUTING.md** is the authoritative source of coding rules for this project. All review
   comments must be consistent with it.
 - PHP follows **WordPress Coding Standards** (enforced by PHPCS).
 - PHP static analysis runs at **PHPStan level 6** — no errors allowed.
