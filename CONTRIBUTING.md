@@ -132,7 +132,9 @@ After installing or updating a plugin that registers an ability, trigger a catal
 
 ### What gets included in the prompt
 
-Only block attributes that exist in the block's registered schema are enriched — Kratt never invents attribute names. An attribute appears in the AI prompt when it meets any of these conditions:
+Ability params that match an existing block attribute enrich it with a description. Params with no matching block attribute are added as virtual prompt-only attributes — they appear in the AI prompt and the AI follows their descriptions, but they are not real block attributes and must be transformed into the correct shape before the block is inserted (see Block attribute transforms below).
+
+An attribute or virtual param appears in the AI prompt when it meets any of these conditions:
 
 - Its type is `string` (always included).
 - It has an `enum` (shown as pipe-separated values).

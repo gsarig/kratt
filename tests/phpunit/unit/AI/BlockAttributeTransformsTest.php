@@ -20,6 +20,7 @@ class BlockAttributeTransformsTest extends WP_UnitTestCase {
 		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
 
 		$this->assertSame( [ [ 39.1, 20.75 ] ], $result['bounds'] );
+		$this->assertFalse( $result['showDefaultBounds'] );
 	}
 
 	public function test_removes_lat_and_lng_after_conversion(): void {
@@ -108,6 +109,7 @@ class BlockAttributeTransformsTest extends WP_UnitTestCase {
 		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
 
 		$this->assertSame( [ [ 38.95, 20.73 ] ], $result['bounds'] );
+		$this->assertFalse( $result['showDefaultBounds'] );
 	}
 
 	public function test_does_not_overwrite_existing_bounds_when_markers_present(): void {
