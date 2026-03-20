@@ -226,17 +226,13 @@ class ClientTest extends WP_UnitTestCase {
 	}
 
 	public function test_apply_transforms_invokes_registered_filter(): void {
-		add_filter(
-			'kratt_block_attribute_transform',
-			static function ( array $attributes, string $block_name ): array {
-				if ( 'test/block' === $block_name ) {
-					$attributes['extra'] = 'injected';
-				}
-				return $attributes;
-			},
-			10,
-			2
-		);
+		$callback = static function ( array $attributes, string $block_name ): array {
+			if ( 'test/block' === $block_name ) {
+				$attributes['extra'] = 'injected';
+			}
+			return $attributes;
+		};
+		add_filter( 'kratt_block_attribute_transform', $callback, 10, 2 );
 
 		$blocks = [
 			[ 'name' => 'test/block', 'attributes' => [ 'content' => 'Hi' ] ],
@@ -244,24 +240,20 @@ class ClientTest extends WP_UnitTestCase {
 
 		$result = Client::apply_block_attribute_transforms( $blocks );
 
-		remove_all_filters( 'kratt_block_attribute_transform' );
+		remove_filter( 'kratt_block_attribute_transform', $callback, 10 );
 
 		$this->assertSame( 'injected', $result[0]['attributes']['extra'] );
 		$this->assertSame( 'Hi', $result[0]['attributes']['content'] );
 	}
 
 	public function test_apply_transforms_does_not_affect_other_blocks(): void {
-		add_filter(
-			'kratt_block_attribute_transform',
-			static function ( array $attributes, string $block_name ): array {
-				if ( 'target/block' === $block_name ) {
-					$attributes['flag'] = true;
-				}
-				return $attributes;
-			},
-			10,
-			2
-		);
+		$callback = static function ( array $attributes, string $block_name ): array {
+			if ( 'target/block' === $block_name ) {
+				$attributes['flag'] = true;
+			}
+			return $attributes;
+		};
+		add_filter( 'kratt_block_attribute_transform', $callback, 10, 2 );
 
 		$blocks = [
 			[ 'name' => 'target/block', 'attributes' => [] ],
@@ -270,24 +262,20 @@ class ClientTest extends WP_UnitTestCase {
 
 		$result = Client::apply_block_attribute_transforms( $blocks );
 
-		remove_all_filters( 'kratt_block_attribute_transform' );
+		remove_filter( 'kratt_block_attribute_transform', $callback, 10 );
 
 		$this->assertTrue( $result[0]['attributes']['flag'] );
 		$this->assertArrayNotHasKey( 'flag', $result[1]['attributes'] );
 	}
 
 	public function test_apply_transforms_recurses_into_inner_blocks(): void {
-		add_filter(
-			'kratt_block_attribute_transform',
-			static function ( array $attributes, string $block_name ): array {
-				if ( 'core/paragraph' === $block_name ) {
-					$attributes['transformed'] = true;
-				}
-				return $attributes;
-			},
-			10,
-			2
-		);
+		$callback = static function ( array $attributes, string $block_name ): array {
+			if ( 'core/paragraph' === $block_name ) {
+				$attributes['transformed'] = true;
+			}
+			return $attributes;
+		};
+		add_filter( 'kratt_block_attribute_transform', $callback, 10, 2 );
 
 		$blocks = [
 			[
@@ -307,7 +295,7 @@ class ClientTest extends WP_UnitTestCase {
 
 		$result = Client::apply_block_attribute_transforms( $blocks );
 
-		remove_all_filters( 'kratt_block_attribute_transform' );
+		remove_filter( 'kratt_block_attribute_transform', $callback, 10 );
 
 		$inner = $result[0]['innerBlocks'][0]['innerBlocks'][0];
 		$this->assertTrue( $inner['attributes']['transformed'] );

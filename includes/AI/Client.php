@@ -110,15 +110,18 @@ class Client {
 	 */
 	public static function apply_block_attribute_transforms( array $blocks ): array {
 		foreach ( $blocks as &$block ) {
-			if ( ! is_array( $block ) || ! isset( $block['name'] ) ) {
+			if ( ! is_array( $block ) || ! isset( $block['name'] ) || ! is_string( $block['name'] ) ) {
 				continue;
 			}
 
-			$block['attributes'] = apply_filters(
-				'kratt_block_attribute_transform',
-				$block['attributes'] ?? [],
-				$block['name']
-			);
+			$attributes = $block['attributes'] ?? [];
+			if ( ! is_array( $attributes ) ) {
+				$attributes = [];
+			}
+
+			$filtered = apply_filters( 'kratt_block_attribute_transform', $attributes, $block['name'] );
+
+			$block['attributes'] = is_array( $filtered ) ? $filtered : [];
 
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
 				$block['innerBlocks'] = self::apply_block_attribute_transforms( $block['innerBlocks'] );

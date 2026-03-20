@@ -45,10 +45,30 @@ class BlockAttributeTransformsTest extends WP_UnitTestCase {
 		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
 
 		$this->assertArrayNotHasKey( 'bounds', $result );
+		$this->assertArrayNotHasKey( 'lat', $result );
 	}
 
 	public function test_does_not_set_bounds_when_only_lng_is_present(): void {
 		$attributes = [ 'lng' => 20.75 ];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		$this->assertArrayNotHasKey( 'bounds', $result );
+		$this->assertArrayNotHasKey( 'lng', $result );
+	}
+
+	public function test_removes_lat_lng_even_when_not_numeric(): void {
+		$attributes = [ 'lat' => 'not-a-number', 'lng' => 'also-not-a-number' ];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		$this->assertArrayNotHasKey( 'lat', $result );
+		$this->assertArrayNotHasKey( 'lng', $result );
+		$this->assertArrayNotHasKey( 'bounds', $result );
+	}
+
+	public function test_handles_non_array_markers_without_error(): void {
+		$attributes = [ 'markers' => 'not-an-array' ];
 
 		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
 

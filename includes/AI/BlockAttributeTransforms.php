@@ -39,16 +39,18 @@ class BlockAttributeTransforms {
 		$lat = $attributes['lat'] ?? null;
 		$lng = $attributes['lng'] ?? null;
 
+		// lat and lng are not real block attributes — always remove them.
+		unset( $attributes['lat'], $attributes['lng'] );
+
 		if ( is_numeric( $lat ) && is_numeric( $lng ) ) {
 			$attributes['bounds']            = [ [ (float) $lat, (float) $lng ] ];
 			$attributes['showDefaultBounds'] = false;
-			unset( $attributes['lat'], $attributes['lng'] );
 			return $attributes;
 		}
 
 		// Fall back to the first marker when lat/lng were omitted (which the AI
 		// will do when it reads "omit when placing markers" in the ability docs).
-		if ( empty( $attributes['bounds'] ) ) {
+		if ( empty( $attributes['bounds'] ) && is_array( $attributes['markers'] ?? null ) ) {
 			$first_marker = $attributes['markers'][0] ?? null;
 			if ( is_array( $first_marker )
 				&& is_numeric( $first_marker['lat'] ?? null )
