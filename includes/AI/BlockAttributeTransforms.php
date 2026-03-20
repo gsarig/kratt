@@ -16,10 +16,16 @@ class BlockAttributeTransforms {
 	/**
 	 * Transforms ootb/openstreetmap attributes from AI output.
 	 *
-	 * The AI sets lat and lng to specify the map centre, sourced from the
-	 * ability's input_schema. Those are not real block attributes — the block
-	 * uses bounds ([[lat, lng]]) instead. This handler converts the pair and
-	 * removes lat/lng so they do not reach the editor as unknown attributes.
+	 * The ootb block uses bounds ([[lat, lng]]) to set the map centre. When the
+	 * AI inserts a block via createBlock(), the server-side auto-centre logic in
+	 * the ability's execute_callback never runs, so bounds must be set explicitly.
+	 *
+	 * Two sources are handled:
+	 * - lat/lng: explicit map centre coords from the ability's input_schema.
+	 *   Converted to bounds and removed (they are not real block attributes).
+	 * - markers: when present and bounds is still unset, bounds is derived from
+	 *   the first marker. This mirrors what the execute_callback does server-side,
+	 *   compensating for the fact that Kratt inserts blocks client-side.
 	 *
 	 * @param array<string, mixed> $attributes Block attributes from the AI.
 	 * @param string               $block_name Block name.
@@ -36,6 +42,19 @@ class BlockAttributeTransforms {
 		if ( is_numeric( $lat ) && is_numeric( $lng ) ) {
 			$attributes['bounds'] = [ [ (float) $lat, (float) $lng ] ];
 			unset( $attributes['lat'], $attributes['lng'] );
+			return $attributes;
+		}
+
+		// Fall back to the first marker when lat/lng were omitted (which the AI
+		// will do when it reads "omit when placing markers" in the ability docs).
+		if ( empty( $attributes['bounds'] ) ) {
+			$first_marker = $attributes['markers'][0] ?? null;
+			if ( is_array( $first_marker )
+				&& is_numeric( $first_marker['lat'] ?? null )
+				&& is_numeric( $first_marker['lng'] ?? null )
+			) {
+				$attributes['bounds'] = [ [ (float) $first_marker['lat'], (float) $first_marker['lng'] ] ];
+			}
 		}
 
 		return $attributes;

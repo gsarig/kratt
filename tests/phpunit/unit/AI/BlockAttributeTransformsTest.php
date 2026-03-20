@@ -76,4 +76,51 @@ class BlockAttributeTransformsTest extends WP_UnitTestCase {
 
 		$this->assertSame( [], $result );
 	}
+
+	public function test_derives_bounds_from_first_marker_when_lat_lng_absent(): void {
+		$attributes = [
+			'markers' => [
+				[ 'lat' => 38.95, 'lng' => 20.73 ],
+				[ 'lat' => 37.97, 'lng' => 23.72 ],
+			],
+		];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		$this->assertSame( [ [ 38.95, 20.73 ] ], $result['bounds'] );
+	}
+
+	public function test_does_not_overwrite_existing_bounds_when_markers_present(): void {
+		$attributes = [
+			'bounds'  => [ [ 51.5, -0.1 ] ],
+			'markers' => [ [ 'lat' => 38.95, 'lng' => 20.73 ] ],
+		];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		$this->assertSame( [ [ 51.5, -0.1 ] ], $result['bounds'] );
+	}
+
+	public function test_does_not_set_bounds_when_markers_is_empty(): void {
+		$attributes = [ 'markers' => [] ];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		$this->assertArrayNotHasKey( 'bounds', $result );
+	}
+
+	public function test_lat_lng_take_precedence_over_markers(): void {
+		$attributes = [
+			'lat'     => 39.1,
+			'lng'     => 20.75,
+			'markers' => [ [ 'lat' => 37.97, 'lng' => 23.72 ] ],
+		];
+
+		$result = BlockAttributeTransforms::ootb_openstreetmap( $attributes, 'ootb/openstreetmap' );
+
+		// lat/lng win; bounds should reflect them, not the first marker.
+		$this->assertSame( [ [ 39.1, 20.75 ] ], $result['bounds'] );
+		$this->assertArrayNotHasKey( 'lat', $result );
+		$this->assertArrayNotHasKey( 'lng', $result );
+	}
 }
