@@ -2,6 +2,8 @@
 
 An Experimental WordPress AI block composer. Describe the content you want and Kratt inserts the right blocks, without requiring you to know block names or navigate the inserter.
 
+[![Kratt demo](https://img.youtube.com/vi/k9c3CU4qR9A/maxresdefault.jpg)](https://www.youtube.com/watch?v=k9c3CU4qR9A)
+
 > [!NOTE]
 > **Kratt** is a household spirit from Estonian and Finnish mythology. According to legend, a Kratt is assembled from whatever scraps are at hand: straw, sticks, old tools. It is brought to life by making a pact with the devil. Once animated, it becomes an obedient servant that fetches things, carries loads, and does work on your behalf, tirelessly and unseen.
 
