@@ -155,8 +155,10 @@ class Client {
 			],
 		];
 
+		$filtered = apply_filters( 'kratt_dummy_response', $blocks, $prompt );
+
 		return [
-			'blocks' => apply_filters( 'kratt_dummy_response', $blocks, $prompt ),
+			'blocks' => is_array( $filtered ) ? $filtered : $blocks,
 		];
 	}
 }
