@@ -146,7 +146,11 @@ function KrattSidebar() {
 			}
 			insertBlocks( parsedBlocks, index, rootClientId );
 
-			const summary = `Added ${ parsedBlocks.length } block${ parsedBlocks.length !== 1 ? 's' : '' } to the editor.`;
+			const summary = sprintf(
+				/* translators: %d: number of blocks inserted */
+				_n( 'Added %d block to the editor.', 'Added %d blocks to the editor.', parsedBlocks.length, 'kratt' ),
+				parsedBlocks.length
+			);
 			addMessage( 'assistant', summary, false, response.note ?? null );
 		} catch ( error ) {
 			addMessage( 'assistant', error?.message ?? __( 'Something went wrong.', 'kratt' ), true );
@@ -193,7 +197,7 @@ function KrattSidebar() {
 				<div className="kratt-messages">
 					{ messages.length === 0 && (
 						<p className="kratt-empty-state">
-							{ __( "Describe the blocks you'd like to add to the editor.", 'kratt' ) }
+							{ __( 'Describe the blocks you\'d like to add to the editor.', 'kratt' ) }
 							<br />
 							<em>{ __( 'Example: "Add a hero, then an FAQ section."', 'kratt' ) }</em>
 						</p>
@@ -202,10 +206,15 @@ function KrattSidebar() {
 						<details className="kratt-history">
 							<summary className="kratt-history__toggle">
 								{ sprintf(
-								/* translators: %d: number of previous messages */
-								_n( '%d previous message', '%d previous messages', olderMessages.length, 'kratt' ),
-								olderMessages.length
-							) }
+									/* translators: %d: number of previous messages */
+									_n(
+										'%d previous message',
+										'%d previous messages',
+										olderMessages.length,
+										'kratt'
+									),
+									olderMessages.length
+								) }
 							</summary>
 							<div className="kratt-history__messages">
 								{ olderMessages.map( renderMessage ) }
