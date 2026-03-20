@@ -153,6 +153,35 @@ Those settings are controlled by the provider plugin, not Kratt. Kratt simply ca
 
 ---
 
+## Filter hooks
+
+### `kratt_block_attribute_transform`
+
+```php
+apply_filters( 'kratt_block_attribute_transform', array $attributes, string $block_name )
+```
+
+Runs on every block in the AI response before it reaches the editor. Use this to convert AI-output attributes into the format the block actually expects — for example, mapping virtual ability params to a different attribute shape, or setting companion attributes that must change together.
+
+```php
+add_filter(
+    'kratt_block_attribute_transform',
+    function ( array $attributes, string $block_name ): array {
+        if ( 'my-plugin/my-block' !== $block_name ) {
+            return $attributes;
+        }
+        // transform attributes here
+        return $attributes;
+    },
+    10,
+    2
+);
+```
+
+Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` for details on when and how to write your own.
+
+---
+
 ## REST API
 
 Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).
