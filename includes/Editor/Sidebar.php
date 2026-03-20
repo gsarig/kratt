@@ -23,6 +23,8 @@ class Sidebar {
 			true
 		);
 
+		wp_set_script_translations( 'kratt-sidebar', 'kratt', KRATT_DIR . 'languages' );
+
 		if ( file_exists( KRATT_DIR . 'build/index.css' ) ) {
 			wp_enqueue_style(
 				'kratt-sidebar',
