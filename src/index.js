@@ -32,6 +32,7 @@ import { createBlock } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
+import { __, _n, sprintf } from '@wordpress/i18n';
 
 function KrattSidebar() {
 	const [ messages, setMessages ] = useState( [] );
@@ -124,7 +125,7 @@ function KrattSidebar() {
 			}
 
 			if ( ! Array.isArray( response.blocks ) || ! response.blocks.length ) {
-				addMessage( 'assistant', 'No blocks were returned.', true );
+				addMessage( 'assistant', __( 'No blocks were returned.', 'kratt' ), true );
 				return;
 			}
 
@@ -145,10 +146,14 @@ function KrattSidebar() {
 			}
 			insertBlocks( parsedBlocks, index, rootClientId );
 
-			const summary = `Added ${ parsedBlocks.length } block${ parsedBlocks.length !== 1 ? 's' : '' } to the editor.`;
+			const summary = sprintf(
+				/* translators: %d: number of blocks inserted */
+				_n( 'Added %d block to the editor.', 'Added %d blocks to the editor.', parsedBlocks.length, 'kratt' ),
+				parsedBlocks.length
+			);
 			addMessage( 'assistant', summary, false, response.note ?? null );
 		} catch ( error ) {
-			addMessage( 'assistant', error?.message ?? 'Something went wrong.', true );
+			addMessage( 'assistant', error?.message ?? __( 'Something went wrong.', 'kratt' ), true );
 		} finally {
 			setIsLoading( false );
 		}
@@ -187,20 +192,29 @@ function KrattSidebar() {
 	}
 
 	return (
-		<PluginSidebar name="kratt-sidebar" title="Kratt" icon={ KrattIcon }>
+		<PluginSidebar name="kratt-sidebar" title={ __( 'Kratt', 'kratt' ) } icon={ KrattIcon }>
 			<div className="kratt-sidebar">
 				<div className="kratt-messages">
 					{ messages.length === 0 && (
 						<p className="kratt-empty-state">
-							Describe the blocks you'd like to add to the editor.
+							{ __( 'Describe the blocks you\'d like to add to the editor.', 'kratt' ) }
 							<br />
-							<em>Example: "Add a hero, then an FAQ section."</em>
+							<em>{ __( 'Example: "Add a hero, then an FAQ section."', 'kratt' ) }</em>
 						</p>
 					) }
 					{ olderMessages.length > 0 && (
 						<details className="kratt-history">
 							<summary className="kratt-history__toggle">
-								{ olderMessages.length } previous { olderMessages.length === 1 ? 'message' : 'messages' }
+								{ sprintf(
+									/* translators: %d: number of previous messages */
+									_n(
+										'%d previous message',
+										'%d previous messages',
+										olderMessages.length,
+										'kratt'
+									),
+									olderMessages.length
+								) }
 							</summary>
 							<div className="kratt-history__messages">
 								{ olderMessages.map( renderMessage ) }
@@ -220,7 +234,7 @@ function KrattSidebar() {
 						value={ input }
 						onChange={ setInput }
 						onKeyDown={ handleKeyDown }
-						placeholder="Add a hero with a heading, then an FAQ…"
+						placeholder={ __( 'Describe what you want to build…', 'kratt' ) }
 						rows={ 3 }
 						disabled={ isLoading }
 						__nextHasNoMarginBottom
@@ -231,7 +245,7 @@ function KrattSidebar() {
 						disabled={ ! input.trim() || isLoading }
 						className="kratt-submit"
 					>
-						Generate
+						{ __( 'Generate', 'kratt' ) }
 					</Button>
 				</div>
 			</div>
