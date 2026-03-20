@@ -1,4 +1,4 @@
-# Kratt — WordPress AI Block Composer
+# Kratt: WordPress AI Block Composer
 
 ## Project Overview
 
@@ -27,7 +27,7 @@ restructure code not directly related to the task. Working code must stay workin
 
 Kratt has two distinct layers: PHP (REST, AI client, block catalog, ability integration,
 settings) and JavaScript (Gutenberg sidebar UI). If a task affects both layers, warn before
-proceeding — cross-layer impact needs explicit sign-off.
+proceeding; cross-layer impact needs explicit sign-off.
 
 ### Public API Stability
 
@@ -52,8 +52,8 @@ REST endpoints are also public API: `POST /kratt/v1/compose`, `GET /kratt/v1/cat
 `BlockCatalog::scan()` builds the catalog from the WordPress block registry and stores it
 in a WordPress option. Two data sources are merged:
 
-1. `src/data/core-blocks.json` — hand-curated metadata for common core blocks
-2. `WP_Block_Type_Registry` — all registered blocks (core, theme, plugin)
+1. `src/data/core-blocks.json`: hand-curated metadata for common core blocks
+2. `WP_Block_Type_Registry`: all registered blocks (core, theme, plugin)
 
 The catalog is scanned at activation and whenever a plugin or theme is activated.
 
@@ -61,8 +61,8 @@ The catalog is scanned at activation and whenever a plugin or theme is activated
 
 `BlockCatalog::enrich_from_abilities()` reads registered WordPress abilities and adds
 attribute documentation from their `input_schema` to matching catalog entries. Ability
-params that have no matching block attribute are added as **virtual prompt-only attributes**
-— the AI reads their descriptions and sets them; a transform handler then converts them
+params that have no matching block attribute are added as **virtual prompt-only attributes**;
+the AI reads their descriptions and sets them, and a transform handler then converts them
 to the real block attribute format.
 
 Ability-to-block matching uses name normalization: strip non-alphanumeric chars + lowercase,
@@ -80,7 +80,7 @@ non-array, the original attributes are preserved.
 
 Define `KRATT_TEST_MODE = true` in `wp-config.php` to skip the AI call entirely. The dummy
 response passes through the full transform pipeline. Use the `kratt_dummy_response` filter
-to override which blocks the dummy returns — this is the intended pattern for testing
+to override which blocks the dummy returns; this is the intended pattern for testing
 specific block transforms without burning API tokens.
 
 ### AI Response Flow
@@ -102,11 +102,11 @@ POST /kratt/v1/compose
 
 ## Stack
 
-- **PHP** 8.1+ — REST endpoints, AI client, block catalog, settings
-- **JavaScript** (ES modules, React) — Gutenberg sidebar UI (`@wordpress/` packages)
-- **WordPress** 7.0+ — `wp_ai_client_prompt()`, Abilities API
-- **Composer** — PHP dependencies and dev tools (PHPCS, PHPStan)
-- **npm** — JS build pipeline (`wp-scripts`)
+- **PHP** 8.1+: REST endpoints, AI client, block catalog, settings
+- **JavaScript** (ES modules, React): Gutenberg sidebar UI (`@wordpress/` packages)
+- **WordPress** 7.0+: `wp_ai_client_prompt()`, Abilities API
+- **Composer**: PHP dependencies and dev tools (PHPCS, PHPStan)
+- **npm**: JS build pipeline (`wp-scripts`)
 
 ---
 
@@ -114,7 +114,7 @@ POST /kratt/v1/compose
 
 ```
 kratt/
-├── kratt.php                       # Plugin entry point — constants, autoloader, boot
+├── kratt.php                       # Plugin entry point: constants, autoloader, boot
 ├── includes/
 │   ├── Plugin.php                  # Registers all hooks
 │   ├── AI/
@@ -168,10 +168,10 @@ npm run build       # Rebuild JS after JS changes
 npm run start       # Watch mode
 ```
 
-### Testing — Run After Every Change
+### Testing: Run After Every Change
 
 ```bash
-make lint           # PHPStan (level 6) + PHPCS — run first, fastest
+make lint           # PHPStan (level 6) + PHPCS; run first, fastest
 make phpunit        # PHPUnit (requires WordPress test database)
 make test           # lint + phpunit
 ```
@@ -187,18 +187,18 @@ make test-docker
 ## Testing Workflow
 
 1. Implement the change
-2. Run `make lint` — fix all PHPStan and PHPCS errors before continuing
-3. Run `make phpunit` — all tests must pass
+2. Run `make lint` and fix all PHPStan and PHPCS errors before continuing
+3. Run `make phpunit` and confirm all tests pass
 4. Only report done when both pass
 
 If tests are still failing after 3 fix attempts, stop and explain what was tried and why
-it is still failing — do not keep iterating blindly.
+it is still failing; do not keep iterating blindly.
 
 ### Testing without burning AI tokens
 
 Set `KRATT_TEST_MODE = true` in `wp-config.php`. The dummy response (heading + paragraph)
 goes through the full transform pipeline. To test a specific block, add this to
-`functions.php` — do not edit the plugin:
+`functions.php` (do not edit the plugin):
 
 ```php
 add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): array {
@@ -213,11 +213,11 @@ add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): a
 ## Code Style
 
 - WordPress Coding Standards (enforced by PHPCS via `phpcs.xml`)
-- PHPStan level 6 — no errors allowed
-- PHP 8.1+ — use typed properties, union types, named arguments where appropriate
+- PHPStan level 6; no errors allowed
+- PHP 8.1+; use typed properties, union types, named arguments where appropriate
 - JavaScript: ES modules, `@wordpress/` packages, `@wordpress/i18n` for all user-visible strings
 - Text domain: `kratt`
-- No em dashes in prose — use semicolons or split into two sentences
+- No em dashes in prose; use semicolons or split into two sentences
 - Escape all output; sanitize and validate all input
 
 ---
