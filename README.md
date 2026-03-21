@@ -2,6 +2,8 @@
 
 An Experimental WordPress AI block composer. Describe the content you want and Kratt inserts the right blocks, without requiring you to know block names or navigate the inserter.
 
+*Read more: [Experimenting with AI-Assisted Block Composition in WordPress 7.0](https://www.gsarigiannidis.gr/kratt-ai-assisted-block-composition-in-wordpress/)*
+
 [![Kratt demo](https://raw.githubusercontent.com/gsarig/kratt/main/.github/assets/kratt.gif)](https://www.youtube.com/watch?v=k9c3CU4qR9A)
 
 *Click the image to watch the full demo on YouTube.*
