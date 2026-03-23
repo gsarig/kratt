@@ -2,6 +2,18 @@
 
 Planned improvements, in rough priority order. Items are not committed to any release timeline.
 
+## Content review
+
+### Add a "Review" action that audits existing editor content
+
+A dedicated review action — a separate button in the sidebar alongside the compose input — would let the user ask Kratt to read the current editor content and return a structured list of suggestions, issues, or improvements rather than new blocks to insert.
+
+This reuses the same content-reading foundation as the compose flow but inverts the intent: instead of adding something new, the AI evaluates what is already there. Possible review categories include structural issues (heading hierarchy gaps, missing captions, empty blocks), accessibility concerns (images without alt text, insufficient heading contrast for screen readers), consistency problems (mixed tone, inconsistent button labels across a layout), and blocks that appear misconfigured given their context.
+
+The output format is the open design question. The simplest version is a plain list of findings rendered in the sidebar. A more useful version would pair each finding with a one-click fix that triggers a targeted compose request to correct it. The latter requires a new response shape and tighter coordination between the sidebar UI and the REST layer, making it a larger cross-layer feature.
+
+This overlaps with the content-aware insertion entry below: both depend on the AI reasoning about existing content rather than just generating new blocks. A shared "content analysis" step in the compose flow could serve both.
+
 ## Content-aware insertion
 
 ### Reason about existing content when deciding what to insert
