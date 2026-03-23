@@ -2,6 +2,18 @@
 
 Planned improvements, in rough priority order. Items are not committed to any release timeline.
 
+## Content-aware insertion
+
+### Reason about existing content when deciding what to insert
+
+The editor content is already sent to the AI on every request, so the AI can see what blocks are present. What is missing is explicit instruction to reason structurally about that content when generating new blocks.
+
+The most immediate case is heading hierarchy: if the editor already contains an H2, the AI should inspect that context and decide whether a new heading should be another H2 or an H3, based on what the user asked for and where it fits in the document structure. This is a prompt-level improvement — a new rule in `PromptBuilder` — and requires no architecture change.
+
+The more complex case is constraint-based warnings. A third-party plugin or theme might declare, via the `kratt_system_instructions` filter, that a specific block should appear only once per post. Today the AI would simply insert it again. The desired behaviour is for the AI to detect the conflict, skip the insertion, and surface a warning to the user before anything is added.
+
+That requires a new response shape alongside the existing `blocks` and `error` keys: something like a `warning` field that the sidebar intercepts and presents as a confirmation step. The user would then choose to proceed or cancel. This touches the REST response format, the JS sidebar, and the system prompt, so it is a real cross-layer feature rather than a prompt tweak.
+
 ## Patterns
 
 ### Use patterns before assembling from blocks
