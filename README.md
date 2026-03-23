@@ -164,6 +164,30 @@ Those settings are controlled by the provider plugin, not Kratt. Kratt simply ca
 
 ## Filter hooks
 
+### `kratt_system_instructions`
+
+```php
+apply_filters( 'kratt_system_instructions', string $instructions, array $context )
+```
+
+Filters the additional instructions appended to the Kratt AI system prompt on every compose request. The `$instructions` parameter starts as the value saved in **Settings → Kratt**; the filter lets you override or extend it per post type, post ID, or any other condition. `$context` contains `post_id` (int, 0 for unsaved posts) and `post_type` (string).
+
+```php
+add_filter(
+    'kratt_system_instructions',
+    function ( string $instructions, array $context ): string {
+        if ( 'product' === $context['post_type'] ) {
+            return $instructions . ' Always include a core/button with a "Buy now" label.';
+        }
+        return $instructions;
+    },
+    10,
+    2
+);
+```
+
+---
+
 ### `kratt_dummy_response`
 
 ```php

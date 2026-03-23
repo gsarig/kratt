@@ -2,6 +2,16 @@
 
 Planned improvements, in rough priority order. Items are not committed to any release timeline.
 
+## Patterns
+
+### Use patterns before assembling from blocks
+
+When the user's request can be satisfied by an existing block pattern registered on the site, Kratt should prefer the pattern over assembling an equivalent structure from individual blocks. Patterns are pre-designed compositions that are often better structured and better styled than anything the AI would assemble from scratch, so using them when they are a good fit produces a more coherent result.
+
+The implementation would involve including registered patterns in the prompt context alongside the block catalog, instructing the AI to prefer a pattern match when one is relevant, and inserting the pattern's block content rather than a block list when the AI selects one.
+
+This also covers theme patterns, which encode design decisions (spacing, typography scale, color pairings) that the AI cannot reproduce by assembling raw blocks.
+
 ## Block catalog
 
 ### Enable / disable individual blocks
