@@ -69,6 +69,13 @@ class ClientTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'error', $this->dummy_result );
 	}
 
+	public function test_compose_accepts_fifth_parameter(): void {
+		$result = Client::compose( 'Add a heading', '', [], '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertIsArray( $result );
+		$this->assertArrayHasKey( 'blocks', $result );
+	}
+
 	// =========================================================================
 	// strip_json_fences()
 	// =========================================================================

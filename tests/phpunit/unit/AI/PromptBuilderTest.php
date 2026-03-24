@@ -145,4 +145,43 @@ class PromptBuilderTest extends WP_UnitTestCase {
 
 		$this->assertGreaterThan( $rules_pos, $instructions_pos );
 	}
+
+	// =========================================================================
+	// Patterns section
+	// =========================================================================
+
+	public function test_prompt_contains_patterns_section_when_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( '## Available Patterns', $prompt );
+	}
+
+	public function test_prompt_omits_patterns_section_when_empty(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		$this->assertStringNotContainsString( '## Available Patterns', $prompt );
+	}
+
+	public function test_patterns_section_appears_after_blocks_section(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$blocks_pos   = strpos( $prompt, '## Available Blocks' );
+		$patterns_pos = strpos( $prompt, '## Available Patterns' );
+
+		$this->assertNotFalse( $blocks_pos );
+		$this->assertNotFalse( $patterns_pos );
+		$this->assertGreaterThan( $blocks_pos, $patterns_pos );
+	}
+
+	public function test_prompt_contains_pattern_rule_when_patterns_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( '"pattern"', $prompt );
+	}
+
+	public function test_prompt_omits_pattern_rule_when_no_patterns(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		$this->assertStringNotContainsString( 'If a registered pattern closely matches', $prompt );
+	}
 }

@@ -28,7 +28,7 @@ const KrattIcon = (
 );
 import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { createBlock } from '@wordpress/blocks';
+import { createBlock, parse } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
@@ -121,6 +121,28 @@ function KrattSidebar() {
 
 			if ( response.error ) {
 				addMessage( 'assistant', response.error, true, response.suggestion ?? null );
+				return;
+			}
+
+			if ( response.pattern_content ) {
+				const parsedBlocks = parse( response.pattern_content );
+				if ( ! parsedBlocks.length ) {
+					addMessage( 'assistant', __( 'The pattern could not be parsed.', 'kratt' ), true );
+					return;
+				}
+				let { index, rootClientId } = getInsertionPoint();
+				insertBlocks( parsedBlocks, index, rootClientId );
+
+				const summary = sprintf(
+					_n(
+						'Inserted a pattern with %d block.',
+						'Inserted a pattern with %d blocks.',
+						parsedBlocks.length,
+						'kratt'
+					),
+					parsedBlocks.length
+				);
+				addMessage( 'assistant', summary );
 				return;
 			}
 

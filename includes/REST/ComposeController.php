@@ -6,6 +6,7 @@ namespace Kratt\REST;
 
 use Kratt\AI\Client;
 use Kratt\Catalog\BlockCatalog;
+use Kratt\Catalog\PatternCatalog;
 use Kratt\Settings\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -102,8 +103,10 @@ class ComposeController extends WP_REST_Controller {
 			);
 		}
 
-		$instructions = self::resolve_instructions( $post_id, $post_type );
-		$result       = Client::compose( $prompt, $editor_content, $catalog, $instructions );
+		$instructions    = self::resolve_instructions( $post_id, $post_type );
+		$patterns        = PatternCatalog::get_patterns();
+		$patterns_prompt = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		$result          = Client::compose( $prompt, $editor_content, $catalog, $instructions, $patterns_prompt );
 
 		return rest_ensure_response( $result );
 	}
@@ -124,11 +127,15 @@ class ComposeController extends WP_REST_Controller {
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
 		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
 
+		$patterns        = PatternCatalog::get_patterns();
+		$patterns_prompt = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+
 		return Client::compose(
 			$args['prompt'] ?? '',
 			$args['editor_content'] ?? '',
 			$catalog,
-			self::resolve_instructions( $post_id, $post_type )
+			self::resolve_instructions( $post_id, $post_type ),
+			$patterns_prompt
 		);
 	}
 

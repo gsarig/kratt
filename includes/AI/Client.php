@@ -13,9 +13,10 @@ class Client {
 	 * @param string               $editor_content          Current editor content for context.
 	 * @param array<string, mixed> $catalog                 The block catalog to pass to the AI.
 	 * @param string               $additional_instructions Extra instructions appended to the system prompt.
-	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}
+	 * @param string               $patterns_prompt         Formatted pattern list for the prompt; empty when no patterns.
+	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}|array{pattern_content: string}
 	 */
-	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '' ): array {
+	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '', string $patterns_prompt = '' ): array {
 		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
 			$dummy              = self::dummy_response( $user_prompt );
 			$dummy['blocks']    = self::apply_block_attribute_transforms( $dummy['blocks'] );
@@ -26,7 +27,7 @@ class Client {
 			return [ 'error' => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ) ];
 		}
 
-		$system_prompt = PromptBuilder::build( $catalog, $editor_content, $additional_instructions );
+		$system_prompt = PromptBuilder::build( $catalog, $editor_content, $additional_instructions, $patterns_prompt );
 
 		$response = wp_ai_client_prompt( $user_prompt )
 			->using_system_instruction( $system_prompt )
@@ -44,6 +45,10 @@ class Client {
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
+		}
+
+		if ( isset( $decoded['pattern'] ) && is_string( $decoded['pattern'] ) ) {
+			return self::resolve_pattern( $decoded['pattern'] );
 		}
 
 		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
@@ -130,6 +135,27 @@ class Client {
 		unset( $block );
 
 		return $blocks;
+	}
+
+	/**
+	 * Resolves a pattern name to its serialized block content.
+	 *
+	 * @param string $pattern_name The pattern identifier returned by the AI.
+	 * @return array{pattern_content: string}|array{error: string, suggestion: string}
+	 */
+	private static function resolve_pattern( string $pattern_name ): array {
+		$registry = \WP_Block_Patterns_Registry::get_instance();
+
+		if ( ! $registry->is_registered( $pattern_name ) ) {
+			return [
+				'error'      => __( 'The suggested pattern does not exist on this site.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
+
+		$pattern = $registry->get_registered( $pattern_name );
+
+		return [ 'pattern_content' => $pattern['content'] ];
 	}
 
 	/**

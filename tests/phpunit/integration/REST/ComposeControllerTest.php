@@ -327,4 +327,21 @@ class ComposeControllerTest extends WP_UnitTestCase {
 
 		$this->assertSame( 0, $received_context['post_id'] );
 	}
+
+	// =========================================================================
+	// Patterns regression guard
+	// =========================================================================
+
+	public function test_compose_still_works_after_patterns_change(): void {
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/compose' );
+		$request->set_param( 'prompt', 'Add a heading.' );
+
+		$response = $this->controller->create_item( $request );
+		$data     = $response->get_data();
+
+		$this->assertArrayHasKey( 'blocks', $data );
+	}
 }
