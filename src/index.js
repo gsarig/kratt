@@ -34,6 +34,8 @@ import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { __, _n, sprintf } from '@wordpress/i18n';
 
+const BLOCK_SNIPPET_MAX_CHARS = 300;
+
 function KrattSidebar() {
 	const [ messages, setMessages ] = useState( [] );
 	const [ input, setInput ] = useState( '' );
@@ -87,7 +89,7 @@ function KrattSidebar() {
 					}
 					const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
 					if ( text ) {
-						const snippet = text.length > 80 ? text.slice( 0, 80 ) + '…' : text;
+						const snippet = text.length > BLOCK_SNIPPET_MAX_CHARS ? text.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : text;
 						const escaped = snippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
 						line += `: "${ escaped }"`;
 					}

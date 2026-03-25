@@ -23,6 +23,7 @@ define( 'KRATT_VERSION', '0.1.0' );
 define( 'KRATT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KRATT_URL', plugin_dir_url( __FILE__ ) );
 define( 'KRATT_FILE', __FILE__ );
+define( 'KRATT_EDITOR_CONTENT_MAX_CHARS', 8000 );
 
 if ( file_exists( KRATT_DIR . 'vendor/autoload.php' ) ) {
 	require_once KRATT_DIR . 'vendor/autoload.php';
