@@ -327,6 +327,8 @@ Analyses the current editor content and returns structured feedback.
 
 `type` is one of `structure`, `accessibility`, or `consistency`. `block_index` is omitted when the finding applies to the content as a whole. An empty `findings` array means no issues were found.
 
+**Known limitation:** `editor_content` is capped at 8000 characters before being forwarded to the AI. Posts with very long content will be reviewed only partially, with no indication in the response that anything was truncated. This will be addressed in a future release.
+
 ---
 
 ### `GET /wp-json/kratt/v1/catalog`
