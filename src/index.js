@@ -254,7 +254,7 @@ function KrattSidebar() {
 			} );
 
 			if ( response.error ) {
-				addMessage( 'assistant', response.error, true );
+				addMessage( 'assistant', response.error, true, response.suggestion ?? null );
 				return;
 			}
 

@@ -62,7 +62,7 @@ class PromptBuilder {
 	 * Builds the system prompt for an AI content review request.
 	 *
 	 * @param array<string, mixed> $catalog                 Available blocks for context.
-	 * @param string               $editor_content          The block summary to review.
+	 * @param string               $editor_content          Serialized block markup to review (e.g. output of serialize( blocks )).
 	 * @param string               $focus                   Optional review focus from the user.
 	 * @param string               $additional_instructions Extra instructions appended to the prompt.
 	 */

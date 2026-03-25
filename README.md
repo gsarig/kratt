@@ -337,7 +337,7 @@ Analyses the current editor content and returns structured feedback.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`) |
+| `editor_content` | string | no | Serialized block markup for the current post content (HTML with WordPress block comments, as produced by `serialize( blocks )` from `@wordpress/blocks`). `block_index` values in the response refer to the zero-based position of top-level blocks in this markup. |
 | `focus` | string | no | Optional natural language focus for the review (e.g. "Check accessibility") |
 | `post_id` | integer | no | Current post ID (0 for unsaved posts) |
 | `post_type` | string | no | Current post type slug |
