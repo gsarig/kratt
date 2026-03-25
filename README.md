@@ -274,7 +274,7 @@ Generates blocks from a natural language prompt.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `prompt` | string | yes | The user's natural language instruction |
-| `editor_content` | string | no | Serialized current editor content (read-only context) |
+| `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`), used as read-only context |
 | `allowed_blocks` | string[] | no | List of block slugs permitted in the editor |
 
 **Success response:**
@@ -305,7 +305,7 @@ Analyses the current editor content and returns structured feedback.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `editor_content` | string | no | Serialized current editor content to review |
+| `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`) |
 | `focus` | string | no | Optional natural language focus for the review (e.g. "Check accessibility") |
 | `post_id` | integer | no | Current post ID (0 for unsaved posts) |
 | `post_type` | string | no | Current post type slug |
