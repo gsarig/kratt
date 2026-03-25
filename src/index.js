@@ -48,6 +48,16 @@ function KrattSidebar() {
 
 	const { insertBlocks } = useDispatch( blockEditorStore );
 
+	// An empty paragraph is WordPress's default placeholder — it does not count
+	// as reviewable content. All other block types do, even if they have no text.
+	const hasReviewableContent = blocks.some( ( block ) => {
+		if ( block.name === 'core/paragraph' ) {
+			const text = ( block.attributes?.content || '' ).replace( /<[^>]+>/g, '' ).trim();
+			return text !== '';
+		}
+		return true;
+	} );
+
 	function buildEditorContent() {
 		return blocks.length
 			? blocks
@@ -317,7 +327,7 @@ function KrattSidebar() {
 						<Button
 							variant="secondary"
 							onClick={ handleReview }
-							disabled={ ! blocks.length || !! input.trim() || isLoading || isReviewLoading }
+							disabled={ ! hasReviewableContent || !! input.trim() || isLoading || isReviewLoading }
 							isBusy={ isReviewLoading }
 						>
 							{ __( 'Review', 'kratt' ) }
