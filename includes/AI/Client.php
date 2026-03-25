@@ -133,7 +133,32 @@ class Client {
 			];
 		}
 
-		return [ 'findings' => $decoded['findings'] ];
+		return [ 'findings' => self::filter_invalid_findings( $decoded['findings'] ) ];
+	}
+
+	/**
+	 * Filters a findings array to only include well-formed entries.
+	 *
+	 * Each valid finding must be an array with a string "type" matching one of the
+	 * allowed categories and a non-empty string "message". Malformed or unknown entries
+	 * are dropped before the response reaches the sidebar.
+	 *
+	 * @param array<mixed> $findings Raw findings from the AI response.
+	 * @return array<int, mixed>
+	 */
+	public static function filter_invalid_findings( array $findings ): array {
+		$allowed_types = [ 'structure', 'accessibility', 'consistency' ];
+
+		return array_values(
+			array_filter(
+				$findings,
+				static function ( $finding ) use ( $allowed_types ): bool {
+					return is_array( $finding )
+						&& isset( $finding['type'] ) && is_string( $finding['type'] ) && in_array( $finding['type'], $allowed_types, true )
+						&& isset( $finding['message'] ) && is_string( $finding['message'] );
+				}
+			)
+		);
 	}
 
 	/**

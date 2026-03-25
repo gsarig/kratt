@@ -387,4 +387,89 @@ class ClientTest extends WP_UnitTestCase {
 			remove_filter( 'kratt_dummy_review_response', $callback );
 		}
 	}
+
+	// =========================================================================
+	// filter_invalid_findings()
+	// =========================================================================
+
+	public function test_filter_invalid_findings_keeps_valid_entries(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Heading gap.', 'suggestion' => 'Fix it.' ],
+			[ 'type' => 'accessibility', 'message' => 'Missing alt text.' ],
+			[ 'type' => 'consistency', 'message' => 'Wrong casing.', 'block_index' => 2 ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 3, $result );
+	}
+
+	public function test_filter_invalid_findings_removes_unknown_type(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.' ],
+			[ 'type' => 'invented', 'message' => 'Invalid type.' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'structure', $result[0]['type'] );
+	}
+
+	public function test_filter_invalid_findings_removes_missing_message(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.' ],
+			[ 'type' => 'accessibility' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+	}
+
+	public function test_filter_invalid_findings_removes_non_string_message(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 42 ],
+			[ 'type' => 'consistency', 'message' => 'Valid.' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'consistency', $result[0]['type'] );
+	}
+
+	public function test_filter_invalid_findings_removes_non_array_entries(): void {
+		$findings = [
+			'not-an-array',
+			[ 'type' => 'structure', 'message' => 'Valid.' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+	}
+
+	public function test_filter_invalid_findings_returns_empty_for_all_invalid(): void {
+		$findings = [
+			[ 'type' => 'unknown', 'message' => 'Bad.' ],
+			'string-entry',
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertSame( [], $result );
+	}
+
+	public function test_filter_invalid_findings_reindexes_result(): void {
+		$findings = [
+			[ 'type' => 'invented', 'message' => 'Dropped.' ],
+			[ 'type' => 'structure', 'message' => 'Kept.' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertArrayHasKey( 0, $result );
+		$this->assertArrayNotHasKey( 1, $result );
+	}
 }

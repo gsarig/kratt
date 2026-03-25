@@ -66,12 +66,13 @@ function KrattSidebar() {
 					if ( block.name === 'core/heading' && block.attributes?.level ) {
 						line += ` (H${ block.attributes.level })`;
 					}
-					const raw =
+					const rawValue =
 						block.attributes?.content ||
 						block.attributes?.value ||
 						block.attributes?.caption ||
 						block.attributes?.label ||
 						'';
+					const raw = typeof rawValue === 'string' ? rawValue : '';
 					const text = raw.replace( /<[^>]+>/g, '' ).trim();
 					if ( text ) {
 						line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
