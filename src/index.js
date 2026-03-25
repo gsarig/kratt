@@ -295,18 +295,27 @@ function KrattSidebar() {
 									findings.length
 								) }
 							</p>
-							{ findings.map( ( finding, i ) => (
-								<div
-									key={ i }
-									className={ `kratt-finding kratt-finding--${ finding.type }` }
-								>
-									<span className="kratt-finding__type">{ finding.type }</span>
-									<p className="kratt-finding__message">{ finding.message }</p>
-									{ typeof finding.suggestion === 'string' && finding.suggestion.trim() !== '' && (
-										<p className="kratt-finding__suggestion">{ finding.suggestion }</p>
-									) }
-								</div>
-							) ) }
+							{ findings.map( ( finding, i ) => {
+								const typeLabelMap = {
+									structure: __( 'Structure', 'kratt' ),
+									accessibility: __( 'Accessibility', 'kratt' ),
+									consistency: __( 'Consistency', 'kratt' ),
+								};
+								const typeLabel = typeLabelMap[ finding.type ] || finding.type;
+
+								return (
+									<div
+										key={ i }
+										className={ `kratt-finding kratt-finding--${ finding.type }` }
+									>
+										<span className="kratt-finding__type">{ typeLabel }</span>
+										<p className="kratt-finding__message">{ finding.message }</p>
+										{ typeof finding.suggestion === 'string' && finding.suggestion.trim() !== '' && (
+											<p className="kratt-finding__suggestion">{ finding.suggestion }</p>
+										) }
+									</div>
+								);
+							} ) }
 						</div>
 					) }
 					{ ( isLoading || isReviewLoading ) && (
