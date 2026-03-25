@@ -102,6 +102,25 @@ class ReviewControllerTest extends WP_UnitTestCase {
 	}
 
 	// =========================================================================
+	// focus param
+	// =========================================================================
+
+	public function test_review_accepts_focus_param(): void {
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/review' );
+		$request->set_param( 'editor_content', '[0] core/paragraph: "Hello world"' );
+		$request->set_param( 'focus', 'Check accessibility only.' );
+
+		$response = $this->controller->create_item( $request );
+		$data     = $response->get_data();
+
+		$this->assertArrayHasKey( 'findings', $data );
+		$this->assertIsArray( $data['findings'] );
+	}
+
+	// =========================================================================
 	// kratt_system_instructions filter
 	// =========================================================================
 
