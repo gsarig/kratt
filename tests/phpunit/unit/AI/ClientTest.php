@@ -472,4 +472,68 @@ class ClientTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 0, $result );
 		$this->assertArrayNotHasKey( 1, $result );
 	}
+
+	public function test_filter_invalid_findings_trims_message(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => '  Padded.  ' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertSame( 'Padded.', $result[0]['message'] );
+	}
+
+	public function test_filter_invalid_findings_drops_whitespace_only_message(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => '   ' ],
+			[ 'type' => 'consistency', 'message' => 'Valid.' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertSame( 'consistency', $result[0]['type'] );
+	}
+
+	public function test_filter_invalid_findings_trims_suggestion(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.', 'suggestion' => '  Try this.  ' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertSame( 'Try this.', $result[0]['suggestion'] );
+	}
+
+	public function test_filter_invalid_findings_removes_whitespace_only_suggestion(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.', 'suggestion' => '   ' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertArrayNotHasKey( 'suggestion', $result[0] );
+	}
+
+	public function test_filter_invalid_findings_removes_non_string_suggestion(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.', 'suggestion' => [ 'array' ] ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertArrayNotHasKey( 'suggestion', $result[0] );
+	}
+
+	public function test_filter_invalid_findings_casts_block_index_to_int(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.', 'block_index' => '3' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertSame( 3, $result[0]['block_index'] );
+	}
 }

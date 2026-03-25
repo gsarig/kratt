@@ -52,7 +52,8 @@ function KrattSidebar() {
 	// as reviewable content. All other block types do, even if they have no text.
 	const hasReviewableContent = blocks.some( ( block ) => {
 		if ( block.name === 'core/paragraph' ) {
-			const text = ( block.attributes?.content || '' ).replace( /<[^>]+>/g, '' ).trim();
+			const content = block.attributes?.content;
+			const text = ( typeof content === 'string' ? content : '' ).replace( /<[^>]+>/g, '' ).trim();
 			return text !== '';
 		}
 		return true;
@@ -299,7 +300,7 @@ function KrattSidebar() {
 								>
 									<span className="kratt-finding__type">{ finding.type }</span>
 									<p className="kratt-finding__message">{ finding.message }</p>
-									{ finding.suggestion && (
+									{ typeof finding.suggestion === 'string' && finding.suggestion.trim() !== '' && (
 										<p className="kratt-finding__suggestion">{ finding.suggestion }</p>
 									) }
 								</div>

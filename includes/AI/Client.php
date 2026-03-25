@@ -93,7 +93,8 @@ class Client {
 			 */
 			$filtered = apply_filters( 'kratt_dummy_review_response', $findings, $editor_content );
 
-			return [ 'findings' => is_array( $filtered ) ? $filtered : $findings ];
+			$final = is_array( $filtered ) ? $filtered : $findings;
+			return [ 'findings' => self::filter_invalid_findings( $final ) ];
 		}
 
 		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
@@ -148,17 +149,41 @@ class Client {
 	 */
 	public static function filter_invalid_findings( array $findings ): array {
 		$allowed_types = [ 'structure', 'accessibility', 'consistency' ];
+		$result        = [];
 
-		return array_values(
-			array_filter(
-				$findings,
-				static function ( $finding ) use ( $allowed_types ): bool {
-					return is_array( $finding )
-						&& isset( $finding['type'] ) && is_string( $finding['type'] ) && in_array( $finding['type'], $allowed_types, true )
-						&& isset( $finding['message'] ) && is_string( $finding['message'] );
+		foreach ( $findings as $finding ) {
+			if ( ! is_array( $finding ) ) {
+				continue;
+			}
+			if ( ! isset( $finding['type'] ) || ! is_string( $finding['type'] ) || ! in_array( $finding['type'], $allowed_types, true ) ) {
+				continue;
+			}
+			if ( ! isset( $finding['message'] ) || ! is_string( $finding['message'] ) ) {
+				continue;
+			}
+
+			$message = trim( $finding['message'] );
+			if ( '' === $message ) {
+				continue;
+			}
+			$finding['message'] = $message;
+
+			if ( isset( $finding['suggestion'] ) ) {
+				if ( ! is_string( $finding['suggestion'] ) || '' === trim( $finding['suggestion'] ) ) {
+					unset( $finding['suggestion'] );
+				} else {
+					$finding['suggestion'] = trim( $finding['suggestion'] );
 				}
-			)
-		);
+			}
+
+			if ( isset( $finding['block_index'] ) ) {
+				$finding['block_index'] = (int) $finding['block_index'];
+			}
+
+			$result[] = $finding;
+		}
+
+		return $result;
 	}
 
 	/**
