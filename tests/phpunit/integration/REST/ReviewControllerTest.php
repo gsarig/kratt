@@ -4,6 +4,7 @@ namespace Kratt\Tests\Integration\REST;
 
 use Kratt\Catalog\BlockCatalog;
 use Kratt\REST\ReviewController;
+use Kratt\Settings\Settings;
 use WP_REST_Request;
 use WP_UnitTestCase;
 
@@ -69,6 +70,25 @@ class ReviewControllerTest extends WP_UnitTestCase {
 		$result  = $this->controller->create_item_permissions_check( $request );
 
 		$this->assertTrue( $result );
+	}
+
+	// =========================================================================
+	// Empty catalog guard
+	// =========================================================================
+
+	public function test_empty_catalog_returns_error_with_suggestion(): void {
+		Settings::save_catalog( [] );
+
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/review' );
+
+		$response = $this->controller->create_item( $request );
+		$data     = $response->get_data();
+
+		$this->assertArrayHasKey( 'error', $data );
+		$this->assertArrayHasKey( 'suggestion', $data );
 	}
 
 	// =========================================================================

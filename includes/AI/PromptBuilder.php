@@ -78,13 +78,9 @@ class PromptBuilder {
 		$sections = [
 			'You are a content review assistant embedded in the WordPress Block Editor. Analyse the provided block content and return structured feedback.',
 			"## Available Blocks\n\nFor context, the following blocks are registered on this site:\n\n" . $block_list,
-			"## Current Editor Content\n\nEach entry below shows a block by index and type. Where present, the quoted text is the actual content of that block — read it carefully and evaluate it for text quality (capitalization, spelling, grammar, voice, tone, link text) in addition to structural concerns.\n\n" . $editor_section,
+			"## Current Editor Content\n\n" . $editor_section,
 			"## Review Categories\n\nEvaluate the content across these categories:\n\n- **structure**: Heading hierarchy, logical flow, appropriate use of block types.\n- **accessibility**: Alt text on images, descriptive link and button text (flag generic labels such as \"click here\", \"read more\", or \"here\"), heading levels and hierarchy.\n- **consistency**: Tone, terminology, formatting patterns across the content.",
 		];
-
-		if ( '' !== $additional_instructions ) {
-			$sections[] = "## Additional Review Criteria\n\nIn addition to the categories above, evaluate the content against each rule below. Add a finding for every violation you observe — do not skip any rule:\n\n" . $additional_instructions;
-		}
 
 		$sections[] = "## Response Format\n\nAlways respond with a raw JSON object \xe2\x80\x94 no markdown fences, no prose.\n\nThe object must always contain a \"findings\" array. Each entry in \"findings\" must have:\n- \"type\": one of \"structure\", \"accessibility\", or \"consistency\"\n- \"message\": a short description of the issue\n- \"block_index\": zero-based index of the relevant block (omit if the finding applies to the whole content)\n- \"suggestion\": a concrete, actionable fix\n\nIf there are no findings, respond with this exact JSON: {\"findings\": []}. Never return findings for issues that do not exist.\n\nExample:\n" . $example_findings;
 
@@ -92,6 +88,10 @@ class PromptBuilder {
 
 		if ( '' !== $focus ) {
 			$prompt .= "\n\n## Review Focus\n\n" . $focus;
+		}
+
+		if ( '' !== $additional_instructions ) {
+			$prompt .= "\n\n## Additional Instructions\n\n" . $additional_instructions;
 		}
 
 		return $prompt;

@@ -80,7 +80,17 @@ class ReviewController extends WP_REST_Controller {
 			$editor_content = mb_substr( $editor_content, 0, $max_chars ) . '…';
 		}
 
-		$catalog      = BlockCatalog::get();
+		$catalog = BlockCatalog::get();
+
+		if ( empty( $catalog ) ) {
+			return rest_ensure_response(
+				[
+					'error'      => __( 'No blocks are available. Please run a catalog scan from the Kratt settings page.', 'kratt' ),
+					'suggestion' => __( 'Go to Settings → Kratt and click "Rescan Blocks".', 'kratt' ),
+				]
+			);
+		}
+
 		$instructions = ComposeController::resolve_instructions( $post_id, $post_type );
 		$result       = Client::review( $editor_content, $catalog, $focus, $instructions );
 

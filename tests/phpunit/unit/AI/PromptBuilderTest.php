@@ -207,23 +207,23 @@ class PromptBuilderTest extends WP_UnitTestCase {
 	public function test_build_review_no_additional_instructions_when_empty(): void {
 		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', '' );
 
-		$this->assertStringNotContainsString( '## Additional Review Criteria', $prompt );
+		$this->assertStringNotContainsString( '## Additional Instructions', $prompt );
 	}
 
 	public function test_build_review_contains_additional_instructions_when_provided(): void {
 		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', 'Be concise.' );
 
-		$this->assertStringContainsString( '## Additional Review Criteria', $prompt );
+		$this->assertStringContainsString( '## Additional Instructions', $prompt );
 		$this->assertStringContainsString( 'Be concise.', $prompt );
 	}
 
-	public function test_build_review_additional_criteria_appears_before_response_format(): void {
+	public function test_build_review_additional_criteria_appears_after_response_format(): void {
 		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', 'Custom rule.' );
 
-		$criteria_pos       = strpos( $prompt, '## Additional Review Criteria' );
+		$criteria_pos        = strpos( $prompt, '## Additional Instructions' );
 		$response_format_pos = strpos( $prompt, '## Response Format' );
 
 		$this->assertGreaterThan( 0, $criteria_pos );
-		$this->assertLessThan( $response_format_pos, $criteria_pos );
+		$this->assertGreaterThan( $response_format_pos, $criteria_pos );
 	}
 }

@@ -28,7 +28,7 @@ const KrattIcon = (
 );
 import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { createBlock } from '@wordpress/blocks';
+import { createBlock, serialize } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
@@ -237,7 +237,7 @@ function KrattSidebar() {
 		setIsReviewLoading( true );
 
 		try {
-			const editorContent = buildEditorContent();
+			const editorContent = serialize( blocks );
 
 			const { getCurrentPostId, getCurrentPostType } = wp.data.select( 'core/editor' );
 			const postId   = getCurrentPostId() || 0;
