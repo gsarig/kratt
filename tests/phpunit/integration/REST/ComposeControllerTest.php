@@ -32,6 +32,8 @@ class ComposeControllerTest extends WP_UnitTestCase {
 		delete_option( 'kratt_catalog_scanned_at' );
 		delete_option( 'kratt_additional_instructions' );
 		remove_all_filters( 'kratt_system_instructions' );
+		remove_all_filters( 'kratt_editor_content_max_chars' );
+		remove_all_filters( 'kratt_dummy_response' );
 		wp_set_current_user( 0 );
 		parent::tearDown();
 	}
@@ -119,6 +121,35 @@ class ComposeControllerTest extends WP_UnitTestCase {
 		// With test mode, should get a blocks response, not an error about content length.
 		$this->assertArrayNotHasKey( 'error', $data );
 		$this->assertArrayHasKey( 'blocks', $data );
+	}
+
+	public function test_kratt_editor_content_max_chars_filter_is_respected(): void {
+		add_filter( 'kratt_editor_content_max_chars', fn() => 10 );
+
+		$captured_prompt = null;
+		add_filter(
+			'kratt_dummy_response',
+			function ( array $blocks, string $prompt ) use ( &$captured_prompt ) {
+				$captured_prompt = $prompt;
+				return $blocks;
+			},
+			10,
+			2
+		);
+
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/compose' );
+		$request->set_param( 'prompt', 'Add a paragraph.' );
+		$request->set_param( 'editor_content', str_repeat( 'x', 100 ) );
+
+		$this->controller->create_item( $request );
+
+		// The prompt embeds the (already-truncated) editor content.
+		// After truncation to 10 chars + ellipsis, 11+ consecutive 'x' chars must not appear.
+		$this->assertNotNull( $captured_prompt );
+		$this->assertStringNotContainsString( str_repeat( 'x', 11 ), $captured_prompt );
 	}
 
 	// =========================================================================
