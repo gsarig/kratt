@@ -248,7 +248,7 @@ function KrattSidebar() {
 				<div className="kratt-messages">
 					{ messages.length === 0 && findings.length === 0 && (
 						<p className="kratt-empty-state">
-							{ __( 'Describe the blocks you\'d like to add to the editor.', 'kratt' ) }
+							{ __( 'Type a prompt and click Generate to insert blocks, or click Review to get feedback on the current content.', 'kratt' ) }
 							<br />
 							<em>{ __( 'Example: "Add a hero, then an FAQ section."', 'kratt' ) }</em>
 						</p>
@@ -317,7 +317,7 @@ function KrattSidebar() {
 						<Button
 							variant="secondary"
 							onClick={ handleReview }
-							disabled={ ! blocks.length || isLoading || isReviewLoading }
+							disabled={ ! blocks.length || !! input.trim() || isLoading || isReviewLoading }
 							isBusy={ isReviewLoading }
 						>
 							{ __( 'Review', 'kratt' ) }
