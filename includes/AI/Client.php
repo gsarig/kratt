@@ -4,6 +4,8 @@ declare( strict_types=1 );
 
 namespace Kratt\AI;
 
+use Kratt\Catalog\PatternCatalog;
+
 class Client {
 
 	/**
@@ -44,13 +46,17 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			$log_message = 'Kratt compose: unexpected AI response format. JSON error: ' . json_last_error_msg();
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$log_message .= '. Raw response: ' . substr( $response, 0, 500 );
+			}
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
-			error_log( 'Kratt compose: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
+			error_log( $log_message );
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
 		if ( isset( $decoded['pattern'] ) && is_string( $decoded['pattern'] ) ) {
-			return self::resolve_pattern( $decoded['pattern'] );
+			return self::resolve_pattern( $decoded['pattern'], $catalog );
 		}
 
 		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
@@ -135,8 +141,12 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) || ! isset( $decoded['findings'] ) || ! is_array( $decoded['findings'] ) ) {
+			$log_message = 'Kratt review: unexpected AI response format. JSON error: ' . json_last_error_msg();
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$log_message .= '. Raw response: ' . substr( $response, 0, 500 );
+			}
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
-			error_log( 'Kratt review: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
+			error_log( $log_message );
 			return [
 				'findings' => [],
 				'error'    => __( 'The AI returned an unexpected response format.', 'kratt' ),
@@ -278,12 +288,17 @@ class Client {
 	}
 
 	/**
-	 * Resolves a pattern name to its serialized block content.
+	 * Resolves a pattern name to its serialized block content, filtered against the catalog.
 	 *
-	 * @param string $pattern_name The pattern identifier returned by the AI.
+	 * Validates that the pattern is registered and has content, then runs its parsed
+	 * blocks through filter_unknown_blocks() so that prompt-injected pattern names
+	 * whose blocks fall outside the active catalog cannot bypass allowed_blocks enforcement.
+	 *
+	 * @param string               $pattern_name The pattern identifier returned by the AI.
+	 * @param array<string, mixed> $catalog      The active block catalog, keyed by block name.
 	 * @return array{pattern_content: string}|array{error: string, suggestion: string}
 	 */
-	private static function resolve_pattern( string $pattern_name ): array {
+	public static function resolve_pattern( string $pattern_name, array $catalog ): array {
 		$registry = \WP_Block_Patterns_Registry::get_instance();
 
 		if ( ! $registry->is_registered( $pattern_name ) ) {
@@ -298,6 +313,21 @@ class Client {
 		if ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) || ! is_string( $pattern['content'] ) || '' === $pattern['content'] ) {
 			return [
 				'error'      => __( 'The suggested pattern could not be loaded because it has no content.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
+
+		// Guard against prompt injection: validate the pattern's blocks against the active
+		// catalog. parse_blocks() output uses 'blockName' (WP format), so we delegate to
+		// PatternCatalog::filter_by_catalog() which already handles that format correctly.
+		$allowed = PatternCatalog::filter_by_catalog(
+			[ $pattern_name => [ 'content' => $pattern['content'] ] ],
+			$catalog
+		);
+
+		if ( empty( $allowed ) ) {
+			return [
+				'error'      => __( 'The suggested pattern contains blocks that are not available on this site.', 'kratt' ),
 				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
 			];
 		}

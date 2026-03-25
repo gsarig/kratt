@@ -47,6 +47,11 @@ and must be flagged before implementing:
 REST endpoints are also public API: `POST /kratt/v1/compose`, `POST /kratt/v1/review`,
 `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`.
 
+`POST /kratt/v1/compose` returns one of three shapes:
+- `{"blocks": [...]}` — success; blocks to insert
+- `{"pattern_content": "..."}` — success; serialized block markup from a registered pattern
+- `{"error": "...", "suggestion": "..."}` — failure; human-readable explanation
+
 ---
 
 ## Architecture Notes

@@ -185,6 +185,24 @@ class PromptBuilderTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'If a registered pattern closely matches', $prompt );
 	}
 
+	public function test_response_format_mentions_pattern_alternative_when_patterns_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( 'pattern-namespace/pattern-name', $prompt );
+		$this->assertStringContainsString( 'Available Patterns list', $prompt );
+	}
+
+	public function test_response_format_omits_pattern_alternative_when_no_patterns(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		// The pattern-reference format should not appear in the Response Format section.
+		$response_format_pos = strpos( $prompt, '## Response Format' );
+		$rules_pos           = strpos( $prompt, '## Rules' );
+		$response_format     = substr( $prompt, (int) $response_format_pos, (int) $rules_pos - (int) $response_format_pos );
+
+		$this->assertStringNotContainsString( 'pattern-namespace/pattern-name', $response_format );
+	}
+
 	// =========================================================================
 	// build_review()
 	// =========================================================================
