@@ -57,7 +57,7 @@ class Client {
 	/**
 	 * Sends a review request to the AI and returns findings.
 	 *
-	 * @param string               $editor_content          The rich block summary from the editor.
+	 * @param string               $editor_content          Serialized block markup to review (e.g. output of serialize( blocks )).
 	 * @param array<string, mixed> $catalog                 The block catalog for context.
 	 * @param string               $focus                   Optional review focus prompt.
 	 * @param string               $additional_instructions Extra instructions from settings/filter.
