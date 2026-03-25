@@ -245,6 +245,18 @@ Edit `src/data/core-blocks.json`. Add entries only when the auto-derived descrip
 inaccurate, a disambiguating hint is needed, or a realistic example improves AI output.
 Do not add entries without meaningful hints or curated attribute descriptions.
 
+### Catalog-gating for AI prompt data
+
+Any data source passed to the AI prompt that can result in block insertion must be
+filtered against the active (possibly `allowed_blocks`-filtered) catalog before the
+prompt is built. This applies to the block catalog itself, the pattern catalog, and
+anything similar added in the future.
+
+The pattern catalog learned this the hard way: patterns were included in the prompt
+without checking their block composition, so the AI could return a pattern containing
+blocks outside the `allowed_blocks` list, bypassing the editor's block restrictions.
+`PatternCatalog::filter_by_catalog()` is the reference implementation.
+
 ### Ability name matching
 
 The normalization function strips all non-alphanumeric characters and lowercases. It
