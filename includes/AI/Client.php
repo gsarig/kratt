@@ -44,6 +44,7 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			error_log( 'Kratt compose: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
@@ -133,6 +134,7 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) || ! isset( $decoded['findings'] ) || ! is_array( $decoded['findings'] ) ) {
+			error_log( 'Kratt review: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
 			return [
 				'findings' => [],
 				'error'    => __( 'The AI returned an unexpected response format.', 'kratt' ),
