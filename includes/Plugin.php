@@ -9,6 +9,7 @@ use Kratt\AI\BlockAttributeTransforms;
 use Kratt\Editor\Sidebar;
 use Kratt\REST\CatalogController;
 use Kratt\REST\ComposeController;
+use Kratt\REST\ReviewController;
 
 class Plugin {
 
@@ -111,6 +112,7 @@ class Plugin {
 	public function register_rest_routes(): void {
 		( new ComposeController() )->register_routes();
 		( new CatalogController() )->register_routes();
+		( new ReviewController() )->register_routes();
 	}
 
 	public function register_admin_menu(): void {

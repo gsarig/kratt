@@ -38,10 +38,11 @@ and must be flagged before implementing:
 |------|------|---------|
 | `kratt_block_attribute_transform` | filter | Transform AI-output attributes before blocks reach the editor |
 | `kratt_dummy_response` | filter | Override test mode blocks without editing the plugin |
+| `kratt_dummy_review_response` | filter | Override test mode review findings without editing the plugin |
 | `kratt_system_instructions` | filter | Add or replace system prompt instructions per context |
 
-REST endpoints are also public API: `POST /kratt/v1/compose`, `GET /kratt/v1/catalog`,
-`POST /kratt/v1/catalog/rescan`.
+REST endpoints are also public API: `POST /kratt/v1/compose`, `POST /kratt/v1/review`,
+`GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`.
 
 ---
 

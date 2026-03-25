@@ -112,6 +112,73 @@
 	font-size: 12px;
 }
 
-.kratt-submit {
-	align-self: flex-end;
+/* Input actions row */
+
+.kratt-input-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+/* Findings */
+
+.kratt-findings {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.kratt-findings__heading {
+	font-size: 11px;
+	font-weight: 600;
+	color: #757575;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin: 0;
+}
+
+.kratt-finding {
+	font-size: 12px;
+	line-height: 1.6;
+	padding: 8px 10px;
+	border-left: 3px solid #e2e4e7;
+}
+
+.kratt-finding p {
+	margin: 0;
+}
+
+.kratt-finding p + p {
+	margin-top: 4px;
+}
+
+.kratt-finding--structure {
+	border-left-color: #007cba;
+}
+
+.kratt-finding--accessibility {
+	border-left-color: #cc1818;
+}
+
+.kratt-finding--consistency {
+	border-left-color: #f0b849;
+}
+
+.kratt-finding__type {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #757575;
+	margin-bottom: 4px;
+}
+
+.kratt-finding__message {
+	color: #1e1e1e;
+}
+
+.kratt-finding__suggestion {
+	font-style: italic;
+	color: #757575;
 }

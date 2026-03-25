@@ -57,4 +57,42 @@ class PromptBuilder {
 
 		return $prompt;
 	}
+
+	/**
+	 * Builds the system prompt for an AI content review request.
+	 *
+	 * @param array<string, mixed> $catalog                 Available blocks for context.
+	 * @param string               $editor_content          The block summary to review.
+	 * @param string               $focus                   Optional review focus from the user.
+	 * @param string               $additional_instructions Extra instructions appended to the prompt.
+	 */
+	public static function build_review( array $catalog, string $editor_content = '', string $focus = '', string $additional_instructions = '' ): string {
+		$block_list = BlockCatalog::format_for_prompt( $catalog );
+
+		$editor_section = '' !== $editor_content
+			? $editor_content
+			: 'The editor is currently empty.';
+
+		$example_findings = '{"findings": [{"type": "structure", "message": "Heading hierarchy skips from H2 to H4.", "block_index": 2, "suggestion": "Change the H4 to H3 to maintain a logical hierarchy."}, {"type": "accessibility", "message": "Image block is missing alt text.", "block_index": 4, "suggestion": "Add descriptive alt text that conveys the image meaning."}]}';
+
+		$sections = [
+			'You are a content review assistant embedded in the WordPress Block Editor. Analyse the provided block content and return structured feedback.',
+			"## Available Blocks\n\nFor context, the following blocks are registered on this site:\n\n" . $block_list,
+			"## Current Editor Content\n\n" . $editor_section,
+			"## Review Categories\n\nEvaluate the content across these categories:\n\n- **structure**: Heading hierarchy, logical flow, appropriate use of block types.\n- **accessibility**: Alt text on images, link text quality, heading levels.\n- **consistency**: Tone, terminology, formatting patterns across the content.",
+			"## Response Format\n\nAlways respond with a raw JSON object \xe2\x80\x94 no markdown fences, no prose.\n\nReturn a \"findings\" array. Each entry must have:\n- \"type\": one of \"structure\", \"accessibility\", or \"consistency\"\n- \"message\": a short description of the issue\n- \"block_index\": zero-based index of the relevant block (omit if the finding applies to the whole content)\n- \"suggestion\": a concrete, actionable fix\n\nReturn an empty array if there are no findings. Never return findings for issues that do not exist.\n\nExample:\n" . $example_findings,
+		];
+
+		$prompt = implode( "\n\n", $sections );
+
+		if ( '' !== $focus ) {
+			$prompt .= "\n\n## Review Focus\n\n" . $focus;
+		}
+
+		if ( '' !== $additional_instructions ) {
+			$prompt .= "\n\n## Additional Instructions\n\n" . $additional_instructions;
+		}
+
+		return $prompt;
+	}
 }

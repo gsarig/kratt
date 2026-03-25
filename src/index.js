@@ -38,6 +38,8 @@ function KrattSidebar() {
 	const [ messages, setMessages ] = useState( [] );
 	const [ input, setInput ] = useState( '' );
 	const [ isLoading, setIsLoading ] = useState( false );
+	const [ findings, setFindings ] = useState( [] );
+	const [ isReviewLoading, setIsReviewLoading ] = useState( false );
 
 	const { blocks, selectedBlockClientId } = useSelect( ( select ) => ( {
 		blocks: select( blockEditorStore ).getBlocks(),
@@ -45,6 +47,27 @@ function KrattSidebar() {
 	} ) );
 
 	const { insertBlocks } = useDispatch( blockEditorStore );
+
+	function buildEditorContent() {
+		return blocks.length
+			? blocks
+				.map( ( block, i ) => {
+					let line = `[${ i }] ${ block.name }`;
+					const raw =
+						block.attributes?.content ||
+						block.attributes?.value ||
+						block.attributes?.caption ||
+						block.attributes?.label ||
+						'';
+					const text = raw.replace( /<[^>]+>/g, '' ).trim();
+					if ( text ) {
+						line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
+					}
+					return line;
+				} )
+				.join( '\n' )
+			: '';
+	}
 
 	function getInsertionPoint() {
 		const { getBlockIndex, getBlockRootClientId } =
@@ -70,29 +93,12 @@ function KrattSidebar() {
 		if ( ! prompt || isLoading ) return;
 
 		setInput( '' );
+		setFindings( [] );
 		addMessage( 'user', prompt );
 		setIsLoading( true );
 
 		try {
-			// Build a numbered block summary for positional context.
-			const editorContent = blocks.length
-				? blocks
-					.map( ( block, i ) => {
-						let line = `[${ i }] ${ block.name }`;
-						const raw =
-							block.attributes?.content ||
-							block.attributes?.value ||
-							block.attributes?.caption ||
-							block.attributes?.label ||
-							'';
-						const text = raw.replace( /<[^>]+>/g, '' ).trim();
-						if ( text ) {
-							line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
-						}
-						return line;
-					} )
-					.join( '\n' )
-				: '';
+			const editorContent = buildEditorContent();
 
 			// Collect allowed blocks from editor settings.
 			const { getSettings } = wp.data.select( blockEditorStore );
@@ -159,6 +165,48 @@ function KrattSidebar() {
 		}
 	}
 
+	async function handleReview() {
+		if ( isLoading || isReviewLoading ) return;
+
+		setFindings( [] );
+		setIsReviewLoading( true );
+
+		try {
+			const editorContent = buildEditorContent();
+
+			const { getCurrentPostId, getCurrentPostType } = wp.data.select( 'core/editor' );
+			const postId   = getCurrentPostId() || 0;
+			const postType = getCurrentPostType() || '';
+
+			const response = await apiFetch( {
+				path: '/kratt/v1/review',
+				method: 'POST',
+				data: {
+					editor_content: editorContent,
+					focus: input.trim(),
+					post_id: postId,
+					post_type: postType,
+				},
+			} );
+
+			if ( response.error ) {
+				addMessage( 'assistant', response.error, true );
+				return;
+			}
+
+			if ( ! Array.isArray( response.findings ) || ! response.findings.length ) {
+				addMessage( 'assistant', __( 'No issues found.', 'kratt' ) );
+				return;
+			}
+
+			setFindings( response.findings );
+		} catch ( error ) {
+			addMessage( 'assistant', error?.message ?? __( 'Something went wrong.', 'kratt' ), true );
+		} finally {
+			setIsReviewLoading( false );
+		}
+	}
+
 	function handleKeyDown( event ) {
 		if ( event.key === 'Enter' && ! event.shiftKey ) {
 			event.preventDefault();
@@ -195,7 +243,7 @@ function KrattSidebar() {
 		<PluginSidebar name="kratt-sidebar" title={ __( 'Kratt', 'kratt' ) } icon={ KrattIcon }>
 			<div className="kratt-sidebar">
 				<div className="kratt-messages">
-					{ messages.length === 0 && (
+					{ messages.length === 0 && findings.length === 0 && (
 						<p className="kratt-empty-state">
 							{ __( 'Describe the blocks you\'d like to add to the editor.', 'kratt' ) }
 							<br />
@@ -222,7 +270,30 @@ function KrattSidebar() {
 						</details>
 					) }
 					{ recentMessages.map( renderMessage ) }
-					{ isLoading && (
+					{ findings.length > 0 && (
+						<div className="kratt-findings">
+							<p className="kratt-findings__heading">
+								{ sprintf(
+									/* translators: %d: number of findings */
+									_n( '%d finding', '%d findings', findings.length, 'kratt' ),
+									findings.length
+								) }
+							</p>
+							{ findings.map( ( finding, i ) => (
+								<div
+									key={ i }
+									className={ `kratt-finding kratt-finding--${ finding.type }` }
+								>
+									<span className="kratt-finding__type">{ finding.type }</span>
+									<p className="kratt-finding__message">{ finding.message }</p>
+									{ finding.suggestion && (
+										<p className="kratt-finding__suggestion">{ finding.suggestion }</p>
+									) }
+								</div>
+							) ) }
+						</div>
+					) }
+					{ ( isLoading || isReviewLoading ) && (
 						<div className="kratt-loading">
 							<Spinner />
 						</div>
@@ -236,17 +307,27 @@ function KrattSidebar() {
 						onKeyDown={ handleKeyDown }
 						placeholder={ __( 'Describe what you want to build…', 'kratt' ) }
 						rows={ 3 }
-						disabled={ isLoading }
+						disabled={ isLoading || isReviewLoading }
 						__nextHasNoMarginBottom
 					/>
-					<Button
-						variant="primary"
-						onClick={ handleSubmit }
-						disabled={ ! input.trim() || isLoading }
-						className="kratt-submit"
-					>
-						{ __( 'Generate', 'kratt' ) }
-					</Button>
+					<div className="kratt-input-actions">
+						<Button
+							variant="secondary"
+							onClick={ handleReview }
+							disabled={ ! blocks.length || isLoading || isReviewLoading }
+							isBusy={ isReviewLoading }
+						>
+							{ __( 'Review', 'kratt' ) }
+						</Button>
+						<Button
+							variant="primary"
+							onClick={ handleSubmit }
+							disabled={ ! input.trim() || isLoading || isReviewLoading }
+							isBusy={ isLoading }
+						>
+							{ __( 'Generate', 'kratt' ) }
+						</Button>
+					</div>
 				</div>
 			</div>
 		</PluginSidebar>

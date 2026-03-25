@@ -328,4 +328,63 @@ class ClientTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'OK', $result[2]['attributes']['content'] );
 	}
+
+	// =========================================================================
+	// review() — test mode
+	// =========================================================================
+
+	public function test_review_test_mode_returns_findings_key(): void {
+		$result = Client::review( 'Some content', [] );
+
+		$this->assertArrayHasKey( 'findings', $result );
+	}
+
+	public function test_review_test_mode_findings_is_array(): void {
+		$result = Client::review( 'Some content', [] );
+
+		$this->assertIsArray( $result['findings'] );
+	}
+
+	public function test_review_test_mode_returns_two_findings(): void {
+		$result = Client::review( 'Some content', [] );
+
+		$this->assertCount( 2, $result['findings'] );
+	}
+
+	public function test_review_test_mode_findings_have_required_keys(): void {
+		$result = Client::review( 'Some content', [] );
+
+		foreach ( $result['findings'] as $finding ) {
+			$this->assertArrayHasKey( 'type', $finding );
+			$this->assertArrayHasKey( 'message', $finding );
+			$this->assertArrayHasKey( 'suggestion', $finding );
+		}
+	}
+
+	public function test_review_test_mode_does_not_return_error(): void {
+		$result = Client::review( 'Some content', [] );
+
+		$this->assertArrayNotHasKey( 'error', $result );
+	}
+
+	public function test_review_test_mode_dummy_filter_overrides_findings(): void {
+		$custom_findings = [
+			[
+				'type'       => 'consistency',
+				'message'    => 'Custom finding.',
+				'suggestion' => 'Custom suggestion.',
+			],
+		];
+
+		$callback = static fn() => $custom_findings;
+		add_filter( 'kratt_dummy_review_response', $callback );
+
+		try {
+			$result = Client::review( 'Some content', [] );
+
+			$this->assertSame( $custom_findings, $result['findings'] );
+		} finally {
+			remove_filter( 'kratt_dummy_review_response', $callback );
+		}
+	}
 }

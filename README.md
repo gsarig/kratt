@@ -209,6 +209,29 @@ add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): a
 
 ---
 
+### `kratt_dummy_review_response`
+
+```php
+apply_filters( 'kratt_dummy_review_response', array $findings, string $editor_content )
+```
+
+Only fires when `KRATT_TEST_MODE` is `true`. Lets you override the findings returned by the dummy review response without editing the plugin — useful for testing how specific finding types are rendered in the sidebar.
+
+```php
+add_filter( 'kratt_dummy_review_response', function( array $findings, string $editor_content ): array {
+    return [
+        [
+            'type'       => 'accessibility',
+            'message'    => 'Image is missing alt text.',
+            'block_index' => 0,
+            'suggestion' => 'Add descriptive alt text for screen readers.',
+        ],
+    ];
+}, 10, 2 );
+```
+
+---
+
 ### `kratt_block_attribute_transform`
 
 ```php
@@ -240,7 +263,7 @@ Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` f
 
 ## REST API
 
-Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).
+Kratt exposes three REST endpoints, all requiring authentication (`edit_posts` capability).
 
 ### `POST /wp-json/kratt/v1/compose`
 
@@ -273,6 +296,38 @@ Generates blocks from a natural language prompt.
   "suggestion": "Try describing the content differently, or use a core/group to assemble it manually."
 }
 ```
+
+### `POST /wp-json/kratt/v1/review`
+
+Analyses the current editor content and returns structured feedback.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `editor_content` | string | no | Serialized current editor content to review |
+| `focus` | string | no | Optional natural language focus for the review (e.g. "Check accessibility") |
+| `post_id` | integer | no | Current post ID (0 for unsaved posts) |
+| `post_type` | string | no | Current post type slug |
+
+**Success response:**
+
+```json
+{
+  "findings": [
+    {
+      "type": "accessibility",
+      "message": "Image block is missing alt text.",
+      "block_index": 2,
+      "suggestion": "Add descriptive alt text that conveys the image meaning."
+    }
+  ]
+}
+```
+
+`type` is one of `structure`, `accessibility`, or `consistency`. `block_index` is omitted when the finding applies to the content as a whole. An empty `findings` array means no issues were found.
+
+---
 
 ### `GET /wp-json/kratt/v1/catalog`
 

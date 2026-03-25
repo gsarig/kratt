@@ -138,11 +138,13 @@ class ComposeController extends WP_REST_Controller {
 	 * Starts from the saved setting and passes it through the kratt_system_instructions
 	 * filter so that code can customise instructions per post type or context.
 	 *
+	 * @internal Shared with ReviewController. Not a stable public API.
+	 *
 	 * @param int    $post_id   The current post ID (0 if unsaved).
 	 * @param string $post_type The current post type (always available from the editor).
 	 * @return string
 	 */
-	private static function resolve_instructions( int $post_id, string $post_type ): string {
+	public static function resolve_instructions( int $post_id, string $post_type ): string {
 		$instructions = Settings::get_additional_instructions();
 
 		/**

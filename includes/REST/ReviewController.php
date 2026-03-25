@@ -1,0 +1,83 @@
+<?php
+
+declare( strict_types=1 );
+
+namespace Kratt\REST;
+
+use Kratt\AI\Client;
+use Kratt\Catalog\BlockCatalog;
+use WP_REST_Controller;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+
+class ReviewController extends WP_REST_Controller {
+
+	protected $namespace = 'kratt/v1';
+	protected $rest_base = 'review';
+
+	public function register_routes(): void {
+		register_rest_route(
+			$this->namespace,
+			'/' . $this->rest_base,
+			[
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => [ $this, 'create_item' ],
+				'permission_callback' => [ $this, 'create_item_permissions_check' ],
+				'args'                => [
+					'editor_content' => [
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'wp_kses_post',
+					],
+					'focus'          => [
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_text_field',
+					],
+					'post_id'        => [
+						'type'    => 'integer',
+						'default' => 0,
+					],
+					'post_type'      => [
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => 'sanitize_key',
+					],
+				],
+			]
+		);
+	}
+
+	/**
+	 * Checks whether the current user can use the review endpoint.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return true|\WP_Error
+	 */
+	public function create_item_permissions_check( $request ) {
+		if ( ! current_user_can( 'edit_posts' ) ) {
+			return new \WP_Error( 'rest_forbidden', __( 'You do not have permission to use Kratt.', 'kratt' ), [ 'status' => 403 ] );
+		}
+		return true;
+	}
+
+	/**
+	 * Handles a review request: analyses editor content and returns findings.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return WP_REST_Response|\WP_Error
+	 */
+	public function create_item( $request ) {
+		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
+		$focus          = (string) ( $request->get_param( 'focus' ) ?? '' );
+		$post_id        = (int) $request->get_param( 'post_id' );
+		$post_type      = (string) $request->get_param( 'post_type' );
+
+		$catalog      = BlockCatalog::get();
+		$instructions = ComposeController::resolve_instructions( $post_id, $post_type );
+		$result       = Client::review( $editor_content, $catalog, $focus, $instructions );
+
+		return rest_ensure_response( $result );
+	}
+}
