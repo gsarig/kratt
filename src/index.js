@@ -76,7 +76,9 @@ function KrattSidebar() {
 					const raw = typeof rawValue === 'string' ? rawValue : '';
 					const text = raw.replace( /<[^>]+>/g, '' ).trim();
 					if ( text ) {
-						line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
+						const snippet = text.length > 80 ? text.slice( 0, 80 ) + '…' : text;
+						const escaped = snippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
+						line += `: "${ escaped }"`;
 					}
 					return line;
 				} )
