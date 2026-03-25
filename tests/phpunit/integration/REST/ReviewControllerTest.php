@@ -125,6 +125,27 @@ class ReviewControllerTest extends WP_UnitTestCase {
 		$this->assertNotNull( $received );
 	}
 
+	public function test_kratt_system_instructions_filter_receives_saved_value(): void {
+		update_option( 'kratt_additional_instructions', 'Focus on accessibility.' );
+		$received = null;
+
+		add_filter(
+			'kratt_system_instructions',
+			function ( $instructions ) use ( &$received ) {
+				$received = $instructions;
+				return $instructions;
+			}
+		);
+
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/review' );
+		$this->controller->create_item( $request );
+
+		$this->assertSame( 'Focus on accessibility.', $received );
+	}
+
 	public function test_review_passes_post_type_to_instructions_filter(): void {
 		$received_context = null;
 
@@ -147,5 +168,30 @@ class ReviewControllerTest extends WP_UnitTestCase {
 
 		$this->assertIsArray( $received_context );
 		$this->assertSame( 'product', $received_context['post_type'] );
+	}
+
+	public function test_review_passes_post_id_to_instructions_filter(): void {
+		$received_context = null;
+
+		add_filter(
+			'kratt_system_instructions',
+			function ( $instructions, $context ) use ( &$received_context ) {
+				$received_context = $context;
+				return $instructions;
+			},
+			10,
+			2
+		);
+
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$post_id = $this->factory()->post->create();
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/review' );
+		$request->set_param( 'post_id', $post_id );
+		$this->controller->create_item( $request );
+
+		$this->assertSame( $post_id, $received_context['post_id'] );
 	}
 }
