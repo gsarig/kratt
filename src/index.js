@@ -28,16 +28,20 @@ const KrattIcon = (
 );
 import { useState } from '@wordpress/element';
 import { useSelect, useDispatch } from '@wordpress/data';
-import { createBlock } from '@wordpress/blocks';
+import { createBlock, serialize } from '@wordpress/blocks';
 import { Button, TextareaControl, Spinner } from '@wordpress/components';
 import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { __, _n, sprintf } from '@wordpress/i18n';
 
+const BLOCK_SNIPPET_MAX_CHARS = window.krattData?.blockSnippetMaxChars ?? 300;
+
 function KrattSidebar() {
 	const [ messages, setMessages ] = useState( [] );
 	const [ input, setInput ] = useState( '' );
 	const [ isLoading, setIsLoading ] = useState( false );
+	const [ findings, setFindings ] = useState( [] );
+	const [ isReviewLoading, setIsReviewLoading ] = useState( false );
 
 	const { blocks, selectedBlockClientId } = useSelect( ( select ) => ( {
 		blocks: select( blockEditorStore ).getBlocks(),
@@ -45,6 +49,90 @@ function KrattSidebar() {
 	} ) );
 
 	const { insertBlocks } = useDispatch( blockEditorStore );
+
+	// An empty paragraph is WordPress's default placeholder — it does not count
+	// as reviewable content. All other block types do, even if they have no text.
+	const hasReviewableContent = blocks.some( ( block ) => {
+		if ( block.name === 'core/paragraph' ) {
+			const content = block.attributes?.content;
+			const text = ( typeof content === 'string' ? content : '' ).replace( /<[^>]+>/g, '' ).trim();
+			return text !== '';
+		}
+		return true;
+	} );
+
+	function extractInnerText( innerBlocks ) {
+		if ( ! Array.isArray( innerBlocks ) || ! innerBlocks.length ) {
+			return '';
+		}
+		const attributeKeys = [ 'content', 'value', 'caption', 'label', 'alt', 'text' ];
+		const parts = [];
+		for ( const inner of innerBlocks ) {
+			let raw = '';
+			if ( inner.attributes && typeof inner.attributes === 'object' ) {
+				for ( const key of attributeKeys ) {
+					const candidate = inner.attributes[ key ];
+					if ( typeof candidate === 'string' && candidate.trim() !== '' ) {
+						raw = candidate;
+						break;
+					}
+				}
+			}
+			const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
+			if ( text ) {
+				parts.push( text );
+			}
+			const nested = extractInnerText( inner.innerBlocks );
+			if ( nested ) {
+				parts.push( nested );
+			}
+		}
+		return parts.join( ' / ' );
+	}
+
+	function buildEditorContent() {
+		return blocks.length
+			? blocks
+				.map( ( block, i ) => {
+					let line = `[${ i }] ${ block.name }`;
+					if ( block.name === 'core/heading' && block.attributes?.level ) {
+						line += ` (H${ block.attributes.level })`;
+					}
+					const attributeKeys = [
+						'content',
+						'value',
+						'caption',
+						'label',
+						'alt',
+						'text',
+					];
+					let raw = '';
+					if ( block.attributes && typeof block.attributes === 'object' ) {
+						for ( const key of attributeKeys ) {
+							const candidate = block.attributes[ key ];
+							if ( typeof candidate === 'string' && candidate.trim() !== '' ) {
+								raw = candidate;
+								break;
+							}
+						}
+					}
+					const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
+					if ( text ) {
+						const snippet = text.length > BLOCK_SNIPPET_MAX_CHARS ? text.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : text;
+						const escaped = snippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
+						line += `: "${ escaped }"`;
+					}
+					const innerText = extractInnerText( block.innerBlocks );
+					if ( innerText ) {
+						const innerSnippet = innerText.length > BLOCK_SNIPPET_MAX_CHARS ? innerText.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : innerText;
+						const innerEscaped = innerSnippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
+						line += ` (contains: "${ innerEscaped }")`;
+					}
+					return line;
+				} )
+				.join( '\n' )
+			: '';
+	}
 
 	function getInsertionPoint() {
 		const { getBlockIndex, getBlockRootClientId } =
@@ -70,29 +158,12 @@ function KrattSidebar() {
 		if ( ! prompt || isLoading ) return;
 
 		setInput( '' );
+		setFindings( [] );
 		addMessage( 'user', prompt );
 		setIsLoading( true );
 
 		try {
-			// Build a numbered block summary for positional context.
-			const editorContent = blocks.length
-				? blocks
-					.map( ( block, i ) => {
-						let line = `[${ i }] ${ block.name }`;
-						const raw =
-							block.attributes?.content ||
-							block.attributes?.value ||
-							block.attributes?.caption ||
-							block.attributes?.label ||
-							'';
-						const text = raw.replace( /<[^>]+>/g, '' ).trim();
-						if ( text ) {
-							line += `: "${ text.length > 80 ? text.slice( 0, 80 ) + '…' : text }"`;
-						}
-						return line;
-					} )
-					.join( '\n' )
-				: '';
+			const editorContent = buildEditorContent();
 
 			// Collect allowed blocks from editor settings.
 			const { getSettings } = wp.data.select( blockEditorStore );
@@ -159,6 +230,47 @@ function KrattSidebar() {
 		}
 	}
 
+	async function handleReview() {
+		if ( isLoading || isReviewLoading ) return;
+
+		setFindings( [] );
+		setIsReviewLoading( true );
+
+		try {
+			const editorContent = serialize( blocks );
+
+			const { getCurrentPostId, getCurrentPostType } = wp.data.select( 'core/editor' );
+			const postId   = getCurrentPostId() || 0;
+			const postType = getCurrentPostType() || '';
+
+			const response = await apiFetch( {
+				path: '/kratt/v1/review',
+				method: 'POST',
+				data: {
+					editor_content: editorContent,
+					post_id: postId,
+					post_type: postType,
+				},
+			} );
+
+			if ( response.error ) {
+				addMessage( 'assistant', response.error, true, response.suggestion ?? null );
+				return;
+			}
+
+			if ( ! Array.isArray( response.findings ) || ! response.findings.length ) {
+				addMessage( 'assistant', __( 'No issues found.', 'kratt' ) );
+				return;
+			}
+
+			setFindings( response.findings );
+		} catch ( error ) {
+			addMessage( 'assistant', error?.message ?? __( 'Something went wrong.', 'kratt' ), true );
+		} finally {
+			setIsReviewLoading( false );
+		}
+	}
+
 	function handleKeyDown( event ) {
 		if ( event.key === 'Enter' && ! event.shiftKey ) {
 			event.preventDefault();
@@ -195,9 +307,9 @@ function KrattSidebar() {
 		<PluginSidebar name="kratt-sidebar" title={ __( 'Kratt', 'kratt' ) } icon={ KrattIcon }>
 			<div className="kratt-sidebar">
 				<div className="kratt-messages">
-					{ messages.length === 0 && (
+					{ messages.length === 0 && findings.length === 0 && (
 						<p className="kratt-empty-state">
-							{ __( 'Describe the blocks you\'d like to add to the editor.', 'kratt' ) }
+							{ __( 'Type a prompt and click Generate to insert blocks, or click Review to get feedback on the current content.', 'kratt' ) }
 							<br />
 							<em>{ __( 'Example: "Add a hero, then an FAQ section."', 'kratt' ) }</em>
 						</p>
@@ -222,7 +334,39 @@ function KrattSidebar() {
 						</details>
 					) }
 					{ recentMessages.map( renderMessage ) }
-					{ isLoading && (
+					{ findings.length > 0 && (
+						<div className="kratt-findings">
+							<p className="kratt-findings__heading">
+								{ sprintf(
+									/* translators: %d: number of findings */
+									_n( '%d finding', '%d findings', findings.length, 'kratt' ),
+									findings.length
+								) }
+							</p>
+							{ findings.map( ( finding, i ) => {
+								const typeLabelMap = {
+									structure: __( 'Structure', 'kratt' ),
+									accessibility: __( 'Accessibility', 'kratt' ),
+									consistency: __( 'Consistency', 'kratt' ),
+								};
+								const typeLabel = typeLabelMap[ finding.type ] || finding.type;
+
+								return (
+									<div
+										key={ i }
+										className={ `kratt-finding kratt-finding--${ finding.type }` }
+									>
+										<span className="kratt-finding__type">{ typeLabel }</span>
+										<p className="kratt-finding__message">{ finding.message }</p>
+										{ typeof finding.suggestion === 'string' && finding.suggestion.trim() !== '' && (
+											<p className="kratt-finding__suggestion">{ finding.suggestion }</p>
+										) }
+									</div>
+								);
+							} ) }
+						</div>
+					) }
+					{ ( isLoading || isReviewLoading ) && (
 						<div className="kratt-loading">
 							<Spinner />
 						</div>
@@ -236,17 +380,27 @@ function KrattSidebar() {
 						onKeyDown={ handleKeyDown }
 						placeholder={ __( 'Describe what you want to build…', 'kratt' ) }
 						rows={ 3 }
-						disabled={ isLoading }
+						disabled={ isLoading || isReviewLoading }
 						__nextHasNoMarginBottom
 					/>
-					<Button
-						variant="primary"
-						onClick={ handleSubmit }
-						disabled={ ! input.trim() || isLoading }
-						className="kratt-submit"
-					>
-						{ __( 'Generate', 'kratt' ) }
-					</Button>
+					<div className="kratt-input-actions">
+						<Button
+							variant="secondary"
+							onClick={ handleReview }
+							disabled={ ! hasReviewableContent || !! input.trim() || isLoading || isReviewLoading }
+							isBusy={ isReviewLoading }
+						>
+							{ __( 'Review', 'kratt' ) }
+						</Button>
+						<Button
+							variant="primary"
+							onClick={ handleSubmit }
+							disabled={ ! input.trim() || isLoading || isReviewLoading }
+							isBusy={ isLoading }
+						>
+							{ __( 'Generate', 'kratt' ) }
+						</Button>
+					</div>
 				</div>
 			</div>
 		</PluginSidebar>

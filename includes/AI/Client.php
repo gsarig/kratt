@@ -55,6 +55,142 @@ class Client {
 	}
 
 	/**
+	 * Sends a review request to the AI and returns findings.
+	 *
+	 * @param string               $editor_content          Serialized block markup to review (e.g. output of serialize( blocks )).
+	 * @param array<string, mixed> $catalog                 The block catalog for context.
+	 * @param string               $focus                   Optional review focus prompt.
+	 * @param string               $additional_instructions Extra instructions from settings/filter.
+	 * @return array{findings: array<mixed>}|array{findings: array<mixed>, error: string}
+	 */
+	public static function review(
+		string $editor_content,
+		array $catalog,
+		string $focus = '',
+		string $additional_instructions = ''
+	): array {
+		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
+			$findings = [
+				[
+					'type'        => 'structure',
+					'message'     => 'Heading hierarchy gap detected.',
+					'block_index' => 0,
+					'suggestion'  => 'Review heading levels for proper nesting.',
+				],
+				[
+					'type'        => 'accessibility',
+					'message'     => 'Image is missing alt text.',
+					'block_index' => 1,
+					'suggestion'  => 'Add descriptive alt text for screen readers.',
+				],
+			];
+
+			/**
+			 * Filters the dummy findings returned in KRATT_TEST_MODE.
+			 *
+			 * Only fires when KRATT_TEST_MODE is true. Use this to test how
+			 * specific findings are rendered without making real AI calls.
+			 */
+			$filtered = apply_filters( 'kratt_dummy_review_response', $findings, $editor_content );
+
+			$final = is_array( $filtered ) ? $filtered : $findings;
+			return [ 'findings' => self::filter_invalid_findings( $final ) ];
+		}
+
+		if ( ! function_exists( 'wp_ai_client_prompt' ) ) {
+			return [
+				'findings' => [],
+				'error'    => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ),
+			];
+		}
+
+		$system_prompt = PromptBuilder::build_review( $catalog, $editor_content, $focus, $additional_instructions );
+		$user_prompt   = '' !== $focus ? $focus : __( 'Review the content.', 'kratt' );
+
+		$response = wp_ai_client_prompt( $user_prompt )
+			->using_system_instruction( $system_prompt )
+			->generate_text();
+
+		if ( is_wp_error( $response ) ) {
+			return [
+				'findings' => [],
+				'error'    => $response->get_error_message(),
+			];
+		}
+
+		if ( ! is_string( $response ) ) {
+			return [
+				'findings' => [],
+				'error'    => __( 'Unexpected response from AI provider.', 'kratt' ),
+			];
+		}
+
+		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
+
+		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) || ! isset( $decoded['findings'] ) || ! is_array( $decoded['findings'] ) ) {
+			return [
+				'findings' => [],
+				'error'    => __( 'The AI returned an unexpected response format.', 'kratt' ),
+			];
+		}
+
+		return [ 'findings' => self::filter_invalid_findings( $decoded['findings'] ) ];
+	}
+
+	/**
+	 * Filters a findings array to only include well-formed entries.
+	 *
+	 * Each valid finding must be an array with a string "type" matching one of the
+	 * allowed categories and a non-empty string "message". Malformed or unknown entries
+	 * are dropped before the response reaches the sidebar.
+	 *
+	 * @param array<mixed> $findings Raw findings from the AI response.
+	 * @return array<int, mixed>
+	 */
+	public static function filter_invalid_findings( array $findings ): array {
+		$allowed_types = [ 'structure', 'accessibility', 'consistency' ];
+		$result        = [];
+
+		foreach ( $findings as $finding ) {
+			if ( ! is_array( $finding ) ) {
+				continue;
+			}
+			if ( ! isset( $finding['type'] ) || ! is_string( $finding['type'] ) || ! in_array( $finding['type'], $allowed_types, true ) ) {
+				continue;
+			}
+			if ( ! isset( $finding['message'] ) || ! is_string( $finding['message'] ) ) {
+				continue;
+			}
+
+			$message = trim( $finding['message'] );
+			if ( '' === $message ) {
+				continue;
+			}
+			$finding['message'] = $message;
+
+			if ( isset( $finding['suggestion'] ) ) {
+				if ( ! is_string( $finding['suggestion'] ) || '' === trim( $finding['suggestion'] ) ) {
+					unset( $finding['suggestion'] );
+				} else {
+					$finding['suggestion'] = trim( $finding['suggestion'] );
+				}
+			}
+
+			if ( isset( $finding['block_index'] ) ) {
+				if ( is_int( $finding['block_index'] ) || ( is_string( $finding['block_index'] ) && ctype_digit( $finding['block_index'] ) ) ) {
+					$finding['block_index'] = (int) $finding['block_index'];
+				} else {
+					unset( $finding['block_index'] );
+				}
+			}
+
+			$result[] = $finding;
+		}
+
+		return $result;
+	}
+
+	/**
 	 * Strips markdown code fences from an AI response string.
 	 *
 	 * Some models wrap JSON in ```json ... ``` or ``` ... ``` fences despite
