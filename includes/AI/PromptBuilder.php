@@ -78,7 +78,7 @@ class PromptBuilder {
 		$sections = [
 			'You are a content review assistant embedded in the WordPress Block Editor. Analyse the provided block content and return structured feedback.',
 			"## Available Blocks\n\nFor context, the following blocks are registered on this site:\n\n" . $block_list,
-			"## Current Editor Content\n\n" . $editor_section,
+			"## Current Editor Content\n\nEach entry below shows a block by index and type. Where present, the quoted text is the actual content of that block — read it carefully and evaluate it for text quality (capitalization, spelling, grammar, voice, tone, link text) in addition to structural concerns.\n\n" . $editor_section,
 			"## Review Categories\n\nEvaluate the content across these categories:\n\n- **structure**: Heading hierarchy, logical flow, appropriate use of block types.\n- **accessibility**: Alt text on images, descriptive link and button text (flag generic labels such as \"click here\", \"read more\", or \"here\"), heading levels and hierarchy.\n- **consistency**: Tone, terminology, formatting patterns across the content.",
 		];
 
