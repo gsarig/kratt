@@ -196,7 +196,6 @@ function KrattSidebar() {
 				method: 'POST',
 				data: {
 					editor_content: editorContent,
-					focus: input.trim(),
 					post_id: postId,
 					post_type: postType,
 				},

@@ -74,6 +74,11 @@ class ReviewController extends WP_REST_Controller {
 		$post_id        = (int) $request->get_param( 'post_id' );
 		$post_type      = (string) $request->get_param( 'post_type' );
 
+		// Cap editor content to avoid excessive token usage, matching ComposeController.
+		if ( strlen( $editor_content ) > 8000 ) {
+			$editor_content = substr( $editor_content, 0, 8000 ) . '…';
+		}
+
 		$catalog      = BlockCatalog::get();
 		$instructions = ComposeController::resolve_instructions( $post_id, $post_type );
 		$result       = Client::review( $editor_content, $catalog, $focus, $instructions );

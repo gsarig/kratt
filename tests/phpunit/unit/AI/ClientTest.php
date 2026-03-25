@@ -376,7 +376,7 @@ class ClientTest extends WP_UnitTestCase {
 			],
 		];
 
-		$callback = static fn() => $custom_findings;
+		$callback = static fn( $_findings ) => $custom_findings;
 		add_filter( 'kratt_dummy_review_response', $callback );
 
 		try {
