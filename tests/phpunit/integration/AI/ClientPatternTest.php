@@ -104,6 +104,22 @@ class ClientPatternTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'pattern_content', $result );
 	}
 
+	public function test_resolve_pattern_returns_error_for_pattern_with_freeform_html_when_freeform_not_in_catalog(): void {
+		$this->register_test_pattern(
+			'kratt-test/freeform-pattern',
+			[
+				'title'   => 'Freeform Pattern',
+				'content' => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph --><p>Raw HTML outside a block</p>',
+			]
+		);
+
+		// Catalog allows paragraph but not core/freeform.
+		$result = Client::resolve_pattern( 'kratt-test/freeform-pattern', $this->minimal_catalog() );
+
+		$this->assertArrayHasKey( 'error', $result );
+		$this->assertArrayNotHasKey( 'pattern_content', $result );
+	}
+
 	public function test_resolve_pattern_returns_error_when_pattern_has_any_disallowed_block(): void {
 		$this->register_test_pattern(
 			'kratt-test/mixed-blocks',

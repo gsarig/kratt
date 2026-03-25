@@ -214,6 +214,36 @@ class PatternCatalogTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'kratt-test/blocked-pattern', $result );
 	}
 
+	public function test_filter_by_catalog_rejects_pattern_with_freeform_html_when_freeform_not_in_catalog(): void {
+		$patterns = [
+			'ns/freeform' => [
+				'name'    => 'ns/freeform',
+				'title'   => 'Freeform',
+				'content' => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph --><p>Raw HTML outside a block</p>',
+			],
+		];
+
+		$catalog = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result  = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayNotHasKey( 'ns/freeform', $result );
+	}
+
+	public function test_filter_by_catalog_allows_whitespace_only_freeform_between_blocks(): void {
+		$patterns = [
+			'ns/whitespace' => [
+				'name'    => 'ns/whitespace',
+				'title'   => 'Whitespace',
+				'content' => "<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->\n\n<!-- wp:paragraph --><p>World</p><!-- /wp:paragraph -->",
+			],
+		];
+
+		$catalog = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result  = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayHasKey( 'ns/whitespace', $result );
+	}
+
 	public function test_filter_by_catalog_removes_patterns_with_empty_content(): void {
 		$patterns = [
 			'kratt-test/empty' => [

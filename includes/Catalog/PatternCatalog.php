@@ -190,7 +190,9 @@ class PatternCatalog {
 	 * Recursively checks whether all named blocks in a parsed block list are
 	 * present in the catalog.
 	 *
-	 * Null blockName entries (freeform content between blocks) are ignored.
+	 * Null blockName entries represent freeform HTML outside any block. Whitespace-only
+	 * nodes (common between blocks) are harmless and always pass. Non-whitespace freeform
+	 * content is treated as core/freeform and requires that block to be in the catalog.
 	 *
 	 * @param array<int, mixed>    $blocks  Output of parse_blocks().
 	 * @param array<string, mixed> $catalog Block catalog, keyed by block name.
@@ -201,7 +203,14 @@ class PatternCatalog {
 				continue;
 			}
 			$name = $block['blockName'] ?? null;
-			if ( null !== $name && '' !== $name && ! isset( $catalog[ $name ] ) ) {
+			if ( null === $name ) {
+				$inner = trim( (string) ( $block['innerHTML'] ?? '' ) );
+				if ( '' !== $inner && ! isset( $catalog['core/freeform'] ) ) {
+					return false;
+				}
+				continue;
+			}
+			if ( '' !== $name && ! isset( $catalog[ $name ] ) ) {
 				return false;
 			}
 			if ( ! empty( $block['innerBlocks'] ) && is_array( $block['innerBlocks'] ) ) {
