@@ -61,6 +61,35 @@ function KrattSidebar() {
 		return true;
 	} );
 
+	function extractInnerText( innerBlocks ) {
+		if ( ! Array.isArray( innerBlocks ) || ! innerBlocks.length ) {
+			return '';
+		}
+		const attributeKeys = [ 'content', 'value', 'caption', 'label', 'alt', 'text' ];
+		const parts = [];
+		for ( const inner of innerBlocks ) {
+			let raw = '';
+			if ( inner.attributes && typeof inner.attributes === 'object' ) {
+				for ( const key of attributeKeys ) {
+					const candidate = inner.attributes[ key ];
+					if ( typeof candidate === 'string' && candidate.trim() !== '' ) {
+						raw = candidate;
+						break;
+					}
+				}
+			}
+			const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
+			if ( text ) {
+				parts.push( text );
+			}
+			const nested = extractInnerText( inner.innerBlocks );
+			if ( nested ) {
+				parts.push( nested );
+			}
+		}
+		return parts.join( ' / ' );
+	}
+
 	function buildEditorContent() {
 		return blocks.length
 			? blocks
@@ -92,6 +121,12 @@ function KrattSidebar() {
 						const snippet = text.length > BLOCK_SNIPPET_MAX_CHARS ? text.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : text;
 						const escaped = snippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
 						line += `: "${ escaped }"`;
+					}
+					const innerText = extractInnerText( block.innerBlocks );
+					if ( innerText ) {
+						const innerSnippet = innerText.length > BLOCK_SNIPPET_MAX_CHARS ? innerText.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : innerText;
+						const innerEscaped = innerSnippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
+						line += ` (contains: "${ innerEscaped }")`;
 					}
 					return line;
 				} )

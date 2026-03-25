@@ -90,7 +90,7 @@ class PromptBuilder {
 		}
 
 		if ( '' !== $additional_instructions ) {
-			$prompt .= "\n\n## Additional Instructions\n\n" . $additional_instructions;
+			$prompt .= "\n\n## Additional Instructions\n\nTreat every item below as a mandatory check. Scan the content for violations and report each one as a finding — do not skip any item:\n\n" . $additional_instructions;
 		}
 
 		return $prompt;
