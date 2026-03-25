@@ -23,6 +23,14 @@ class Sidebar {
 			true
 		);
 
+		wp_localize_script(
+			'kratt-sidebar',
+			'krattData',
+			[
+				'blockSnippetMaxChars' => (int) apply_filters( 'kratt_block_snippet_max_chars', KRATT_BLOCK_SNIPPET_MAX_CHARS ),
+			]
+		);
+
 		wp_set_script_translations( 'kratt-sidebar', 'kratt' );
 
 		if ( file_exists( KRATT_DIR . 'build/index.css' ) ) {

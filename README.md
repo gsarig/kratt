@@ -209,6 +209,29 @@ add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): a
 
 ---
 
+### `kratt_dummy_review_response`
+
+```php
+apply_filters( 'kratt_dummy_review_response', array $findings, string $editor_content )
+```
+
+Only fires when `KRATT_TEST_MODE` is `true`. Lets you override the findings returned by the dummy review response without editing the plugin — useful for testing how specific finding types are rendered in the sidebar.
+
+```php
+add_filter( 'kratt_dummy_review_response', function( array $findings, string $editor_content ): array {
+    return [
+        [
+            'type'       => 'accessibility',
+            'message'    => 'Image is missing alt text.',
+            'block_index' => 0,
+            'suggestion' => 'Add descriptive alt text for screen readers.',
+        ],
+    ];
+}, 10, 2 );
+```
+
+---
+
 ### `kratt_block_attribute_transform`
 
 ```php
@@ -238,9 +261,41 @@ Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` f
 
 ---
 
+### `kratt_editor_content_max_chars`
+
+```php
+apply_filters( 'kratt_editor_content_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters of `editor_content` forwarded to the AI on both `/compose` and `/review` requests. The default is `8000`. Content exceeding this limit is truncated server-side and an ellipsis is appended.
+
+```php
+add_filter( 'kratt_editor_content_max_chars', function ( int $max ): int {
+    return 15000;
+} );
+```
+
+---
+
+### `kratt_block_snippet_max_chars`
+
+```php
+apply_filters( 'kratt_block_snippet_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters extracted per block when building the numbered editor summary sent to the AI. The default is `300`. Increase this if you need the AI to see more content per block; the server-side `kratt_editor_content_max_chars` cap still applies to the assembled summary as a whole.
+
+```php
+add_filter( 'kratt_block_snippet_max_chars', function ( int $max ): int {
+    return 500;
+} );
+```
+
+---
+
 ## REST API
 
-Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).
+Kratt exposes three REST endpoints, all requiring authentication (`edit_posts` capability).
 
 ### `POST /wp-json/kratt/v1/compose`
 
@@ -251,7 +306,7 @@ Generates blocks from a natural language prompt.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `prompt` | string | yes | The user's natural language instruction |
-| `editor_content` | string | no | Serialized current editor content (read-only context) |
+| `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`), used as read-only context |
 | `allowed_blocks` | string[] | no | List of block slugs permitted in the editor |
 
 **Success response:**
@@ -273,6 +328,40 @@ Generates blocks from a natural language prompt.
   "suggestion": "Try describing the content differently, or use a core/group to assemble it manually."
 }
 ```
+
+### `POST /wp-json/kratt/v1/review`
+
+Analyses the current editor content and returns structured feedback.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `editor_content` | string | no | Serialized block markup for the current post content (HTML with WordPress block comments, as produced by `serialize( blocks )` from `@wordpress/blocks`). `block_index` values in the response refer to the zero-based position of top-level blocks in this markup. |
+| `focus` | string | no | Optional natural language focus for the review (e.g. "Check accessibility") |
+| `post_id` | integer | no | Current post ID (0 for unsaved posts) |
+| `post_type` | string | no | Current post type slug |
+
+**Success response:**
+
+```json
+{
+  "findings": [
+    {
+      "type": "accessibility",
+      "message": "Image block is missing alt text.",
+      "block_index": 2,
+      "suggestion": "Add descriptive alt text that conveys the image meaning."
+    }
+  ]
+}
+```
+
+`type` is one of `structure`, `accessibility`, or `consistency`. `block_index` is omitted when the finding applies to the content as a whole. An empty `findings` array means no issues were found.
+
+**Known limitation:** `editor_content` is capped at 8000 characters before being forwarded to the AI. Posts with very long content will be reviewed only partially, with no indication in the response that anything was truncated. This will be addressed in a future release.
+
+---
 
 ### `GET /wp-json/kratt/v1/catalog`
 

@@ -54,6 +54,20 @@ On large sites, the full formatted catalog can be several thousand tokens per re
 ### Prompt caching
 Every compose request sends the full system prompt (block catalog + rules) to the AI provider. Anthropic supports prompt caching, which bills cached input tokens at ~10% of the normal rate. The WP AI Client abstraction layer does not currently expose caching controls, so this requires either waiting for upstream support or bypassing `wp_ai_client_prompt` for a direct SDK call. Worth revisiting once the WP AI Client matures.
 
+## Known limitations
+
+### Editor content truncation in compose and review requests
+
+Both `ComposeController` and `ReviewController` cap `editor_content` at 8000 characters before forwarding it to the AI. Content beyond that limit is silently dropped. For compose requests this is mostly harmless — the editor content is read-only context. For review requests it is a real problem: blocks beyond the cut-off are never seen by the AI, which will then produce findings only for the visible portion without any indication that the review is incomplete.
+
+Options to consider:
+
+- Refuse the request outright when content exceeds the limit and surface a clear message ("The editor content is too long to review in full — try selecting a range of blocks first").
+- Truncate at a block boundary rather than mid-character, and inject a note into the prompt so the AI knows it is working with a partial view.
+- Split into multiple requests and merge findings (complex, not recommended for a first pass).
+
+The right trade-off depends on how common very long posts are in practice. Flagging as a known limitation until a decision is made.
+
 ## API
 
 ### Rate limiting on the compose endpoint
