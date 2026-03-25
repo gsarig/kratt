@@ -79,7 +79,7 @@ class PromptBuilder {
 			'You are a content review assistant embedded in the WordPress Block Editor. Analyse the provided block content and return structured feedback.',
 			"## Available Blocks\n\nFor context, the following blocks are registered on this site:\n\n" . $block_list,
 			"## Current Editor Content\n\n" . $editor_section,
-			"## Review Categories\n\nEvaluate the content across these categories:\n\n- **structure**: Heading hierarchy, logical flow, appropriate use of block types.\n- **accessibility**: Alt text on images, link text quality, heading levels.\n- **consistency**: Tone, terminology, formatting patterns across the content.",
+			"## Review Categories\n\nEvaluate the content across these categories:\n\n- **structure**: Heading hierarchy, logical flow, appropriate use of block types.\n- **accessibility**: Alt text on images, descriptive link and button text (flag generic labels such as \"click here\", \"read more\", or \"here\"), heading levels and hierarchy.\n- **consistency**: Tone, terminology, formatting patterns across the content.",
 			"## Response Format\n\nAlways respond with a raw JSON object \xe2\x80\x94 no markdown fences, no prose.\n\nReturn a \"findings\" array. Each entry must have:\n- \"type\": one of \"structure\", \"accessibility\", or \"consistency\"\n- \"message\": a short description of the issue\n- \"block_index\": zero-based index of the relevant block (omit if the finding applies to the whole content)\n- \"suggestion\": a concrete, actionable fix\n\nReturn an empty array if there are no findings. Never return findings for issues that do not exist.\n\nExample:\n" . $example_findings,
 		];
 

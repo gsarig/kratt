@@ -53,6 +53,9 @@ function KrattSidebar() {
 			? blocks
 				.map( ( block, i ) => {
 					let line = `[${ i }] ${ block.name }`;
+					if ( block.name === 'core/heading' && block.attributes?.level ) {
+						line += ` (H${ block.attributes.level })`;
+					}
 					const raw =
 						block.attributes?.content ||
 						block.attributes?.value ||
