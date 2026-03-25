@@ -68,10 +68,10 @@ function KrattSidebar() {
 						line += ` (H${ block.attributes.level })`;
 					}
 					const rawValue =
-						block.attributes?.content ||
-						block.attributes?.value ||
-						block.attributes?.caption ||
-						block.attributes?.label ||
+						block.attributes?.content ??
+						block.attributes?.value ??
+						block.attributes?.caption ??
+						block.attributes?.label ??
 						'';
 					const raw = typeof rawValue === 'string' ? rawValue : '';
 					const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
