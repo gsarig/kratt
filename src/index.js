@@ -34,7 +34,7 @@ import apiFetch from '@wordpress/api-fetch';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { __, _n, sprintf } from '@wordpress/i18n';
 
-const BLOCK_SNIPPET_MAX_CHARS = 300;
+const BLOCK_SNIPPET_MAX_CHARS = window.krattData?.blockSnippetMaxChars ?? 300;
 
 function KrattSidebar() {
 	const [ messages, setMessages ] = useState( [] );

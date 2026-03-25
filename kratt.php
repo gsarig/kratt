@@ -24,6 +24,7 @@ define( 'KRATT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KRATT_URL', plugin_dir_url( __FILE__ ) );
 define( 'KRATT_FILE', __FILE__ );
 define( 'KRATT_EDITOR_CONTENT_MAX_CHARS', 8000 );
+define( 'KRATT_BLOCK_SNIPPET_MAX_CHARS', 300 );
 
 if ( file_exists( KRATT_DIR . 'vendor/autoload.php' ) ) {
 	require_once KRATT_DIR . 'vendor/autoload.php';

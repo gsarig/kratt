@@ -40,6 +40,8 @@ and must be flagged before implementing:
 | `kratt_dummy_response` | filter | Override test mode blocks without editing the plugin |
 | `kratt_dummy_review_response` | filter | Override test mode review findings without editing the plugin |
 | `kratt_system_instructions` | filter | Add or replace system prompt instructions per context |
+| `kratt_editor_content_max_chars` | filter | Override the server-side character cap on `editor_content` (default 8000) |
+| `kratt_block_snippet_max_chars` | filter | Override the per-block text snippet limit in the editor summary (default 300) |
 
 REST endpoints are also public API: `POST /kratt/v1/compose`, `POST /kratt/v1/review`,
 `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`.

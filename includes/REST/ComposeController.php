@@ -83,8 +83,9 @@ class ComposeController extends WP_REST_Controller {
 		$post_type      = (string) $request->get_param( 'post_type' );
 
 		// Cap editor content to avoid excessive token usage.
-		if ( mb_strlen( $editor_content ) > KRATT_EDITOR_CONTENT_MAX_CHARS ) {
-			$editor_content = mb_substr( $editor_content, 0, KRATT_EDITOR_CONTENT_MAX_CHARS ) . '…';
+		$max_chars = (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS );
+		if ( mb_strlen( $editor_content ) > $max_chars ) {
+			$editor_content = mb_substr( $editor_content, 0, $max_chars ) . '…';
 		}
 
 		$catalog = BlockCatalog::get();

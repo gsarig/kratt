@@ -261,6 +261,38 @@ Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` f
 
 ---
 
+### `kratt_editor_content_max_chars`
+
+```php
+apply_filters( 'kratt_editor_content_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters of `editor_content` forwarded to the AI on both `/compose` and `/review` requests. The default is `8000`. Content exceeding this limit is truncated server-side and an ellipsis is appended.
+
+```php
+add_filter( 'kratt_editor_content_max_chars', function ( int $max ): int {
+    return 15000;
+} );
+```
+
+---
+
+### `kratt_block_snippet_max_chars`
+
+```php
+apply_filters( 'kratt_block_snippet_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters extracted per block when building the numbered editor summary sent to the AI. The default is `300`. Increase this if you need the AI to see more content per block; the server-side `kratt_editor_content_max_chars` cap still applies to the assembled summary as a whole.
+
+```php
+add_filter( 'kratt_block_snippet_max_chars', function ( int $max ): int {
+    return 500;
+} );
+```
+
+---
+
 ## REST API
 
 Kratt exposes three REST endpoints, all requiring authentication (`edit_posts` capability).
