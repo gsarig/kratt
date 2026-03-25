@@ -264,6 +264,36 @@ blocks outside the `allowed_blocks` list, bypassing the editor's block restricti
 check; `PatternCatalog::select_for_prompt()` is the reference for relevance-based
 capping before the prompt is built.
 
+### Never log raw AI payloads by default
+
+Never include raw AI request or response data in log messages by default. AI responses
+can embed editor content (the user's post text), which must not end up in server logs
+on production sites. Always gate raw payload logging behind `WP_DEBUG`:
+
+```php
+$msg = 'Kratt: something went wrong. JSON error: ' . json_last_error_msg();
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+    $msg .= '. Raw response: ' . substr( $response, 0, 500 );
+}
+error_log( $msg );
+```
+
+The error type and metadata are safe to log unconditionally; the payload is not.
+
+### Two block formats: never mix them
+
+There are two distinct block array formats in this codebase:
+
+- **AI response format** — produced by `json_decode()` on the AI output. Block names are
+  under the `name` key. Used by `filter_unknown_blocks()` and `apply_block_attribute_transforms()`.
+- **WordPress serialized format** — produced by `parse_blocks()`. Block names are under
+  the `blockName` key. Used by `PatternCatalog::filter_by_catalog()` and `all_blocks_in_catalog()`.
+
+Never pass `parse_blocks()` output to `filter_unknown_blocks()` or vice versa — the key
+mismatch causes silent failures where every block is treated as unknown. When working
+with parsed WP content, use `PatternCatalog::filter_by_catalog()`. When working with AI
+response blocks, use `filter_unknown_blocks()`.
+
 ### Ability name matching
 
 The normalization function strips all non-alphanumeric characters and lowercases. It
