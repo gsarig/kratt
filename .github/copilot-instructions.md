@@ -68,6 +68,13 @@ response instead of calling the AI. The `kratt_dummy_response` filter lets devel
 override which blocks the dummy returns — for example, to test a specific block's
 transform end-to-end without an API call. This is the intended testing pattern.
 
+### mb_* functions are always available
+
+WordPress core ships polyfills for all `mb_*` functions (`mb_strlen`, `mb_substr`, etc.)
+in `wp-includes/compat.php`, which is loaded unconditionally before any plugin code runs.
+Do not flag direct calls to `mb_strlen` or `mb_substr` as potentially unsafe or suggest
+`function_exists()` guards — they are guaranteed in any WordPress context.
+
 ### Ability-to-block name matching
 
 Kratt resolves which block an ability belongs to by normalising both the ability namespace
