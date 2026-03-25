@@ -75,6 +75,23 @@ in `wp-includes/compat.php`, which is loaded unconditionally before any plugin c
 Do not flag direct calls to `mb_strlen` or `mb_substr` as potentially unsafe or suggest
 `function_exists()` guards — they are guaranteed in any WordPress context.
 
+### editor_content uses serialized block markup for review
+
+`handleReview()` sends `serialize(blocks)` to `/kratt/v1/review`, not the plain-text
+`buildEditorContent()` summary. This is intentional: serialized markup includes full
+prose and HTML heading tags (`<h2>`, `<h3>`) so the AI can evaluate text quality
+alongside structure. The `block_index` field in findings still applies — the AI counts
+blocks in the serialized output to produce zero-based indices. Do not suggest switching
+back to `buildEditorContent()` for the review path.
+
+### wp_kses_post() is the correct sanitizer for editor_content
+
+Both `/kratt/v1/compose` and `/kratt/v1/review` sanitize `editor_content` with
+`wp_kses_post()`. Do not suggest `sanitize_textarea_field()`. The content sent is
+serialized WordPress block markup (HTML), and stripping tags would remove heading level
+information (`<h2>`, `<h3>`) that the AI needs. `wp_kses_post()` preserves the
+meaningful HTML structure while stripping unsafe content.
+
 ### Ability-to-block name matching
 
 Kratt resolves which block an ability belongs to by normalising both the ability namespace
