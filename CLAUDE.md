@@ -42,7 +42,7 @@ and must be flagged before implementing:
 | `kratt_system_instructions` | filter | Add or replace system prompt instructions per context |
 | `kratt_editor_content_max_chars` | filter | Override the server-side character cap on `editor_content` (default 8000) |
 | `kratt_block_snippet_max_chars` | filter | Override the per-block text snippet limit in the editor summary (default 300) |
-| `kratt_pattern_catalog_max` | filter | Override the maximum number of patterns included in the AI prompt (default 30) |
+| `kratt_pattern_catalog_max` | filter | Override the maximum number of patterns included in the AI prompt (default 100) |
 
 REST endpoints are also public API: `POST /kratt/v1/compose`, `POST /kratt/v1/review`,
 `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`.
@@ -255,7 +255,9 @@ anything similar added in the future.
 The pattern catalog learned this the hard way: patterns were included in the prompt
 without checking their block composition, so the AI could return a pattern containing
 blocks outside the `allowed_blocks` list, bypassing the editor's block restrictions.
-`PatternCatalog::filter_by_catalog()` is the reference implementation.
+`PatternCatalog::filter_by_catalog()` is the reference implementation for the catalog
+check; `PatternCatalog::select_for_prompt()` is the reference for relevance-based
+capping before the prompt is built.
 
 ### Ability name matching
 

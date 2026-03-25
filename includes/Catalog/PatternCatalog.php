@@ -7,27 +7,21 @@ namespace Kratt\Catalog;
 class PatternCatalog {
 
 	/**
-	 * Returns registered block patterns that have descriptions.
+	 * Returns all registered block patterns that have descriptions.
 	 *
 	 * Reads from the live WP_Block_Patterns_Registry on every call.
 	 * Patterns without a description are skipped (they provide no
-	 * useful context for the AI). Results are capped at KRATT_MAX_PATTERNS
-	 * (default 30) to limit prompt token usage. Override via the
-	 * `kratt_pattern_catalog_max` filter.
+	 * useful context for the AI). No cap is applied here; use
+	 * select_for_prompt() to rank and limit before building the AI prompt.
 	 *
 	 * @return array<string, array<string, mixed>> Keyed by pattern name.
 	 */
 	public static function get_patterns(): array {
-		$registry    = \WP_Block_Patterns_Registry::get_instance();
-		$registered  = $registry->get_all_registered();
-		$patterns    = [];
-		$max         = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
+		$registry   = \WP_Block_Patterns_Registry::get_instance();
+		$registered = $registry->get_all_registered();
+		$patterns   = [];
 
 		foreach ( $registered as $pattern ) {
-			if ( count( $patterns ) >= $max ) {
-				break;
-			}
-
 			$description = $pattern['description'] ?? '';
 			if ( '' === $description ) {
 				continue;
@@ -49,6 +43,48 @@ class PatternCatalog {
 		}
 
 		return $patterns;
+	}
+
+	/**
+	 * Selects the most relevant patterns for inclusion in the AI prompt.
+	 *
+	 * If the total number of patterns is within $max, all are returned.
+	 * Otherwise, each pattern is scored by keyword overlap with the user's
+	 * prompt (across name, title, description, keywords, and categories) and
+	 * the top $max are returned. Words shorter than 3 characters are ignored.
+	 * When the prompt yields no usable words, the first $max patterns are
+	 * returned unchanged.
+	 *
+	 * @param array<string, array<string, mixed>> $patterns Patterns from get_patterns().
+	 * @param string                              $prompt   The user's compose prompt.
+	 * @param int                                 $max      Maximum number of patterns to return.
+	 * @return array<string, array<string, mixed>>
+	 */
+	public static function select_for_prompt( array $patterns, string $prompt, int $max ): array {
+		if ( count( $patterns ) <= $max ) {
+			return $patterns;
+		}
+
+		$split = preg_split( '/[^a-z0-9]+/u', strtolower( $prompt ) );
+		$words = array_values(
+			array_filter(
+				is_array( $split ) ? $split : [],
+				static fn( string $w ) => strlen( $w ) >= 3
+			)
+		);
+
+		if ( empty( $words ) ) {
+			return array_slice( $patterns, 0, $max, preserve_keys: true );
+		}
+
+		$scores = [];
+		foreach ( $patterns as $name => $pattern ) {
+			$scores[ $name ] = self::score_pattern( $pattern, $words );
+		}
+
+		arsort( $scores );
+
+		return array_intersect_key( $patterns, array_slice( $scores, 0, $max, preserve_keys: true ) );
 	}
 
 	/**
@@ -106,6 +142,39 @@ class PatternCatalog {
 				return self::all_blocks_in_catalog( parse_blocks( $content ), $catalog );
 			}
 		);
+	}
+
+	/**
+	 * Scores a single pattern against a list of prompt words.
+	 *
+	 * Counts how many words appear in the combined name, title, description,
+	 * keywords, and categories of the pattern (case-insensitive).
+	 *
+	 * @param array<string, mixed> $pattern    A pattern entry from get_patterns().
+	 * @param string[]             $words      Lowercase words extracted from the prompt.
+	 */
+	private static function score_pattern( array $pattern, array $words ): int {
+		$haystack = strtolower(
+			implode(
+				' ',
+				[
+					$pattern['name'] ?? '',
+					$pattern['title'] ?? '',
+					$pattern['description'] ?? '',
+					implode( ' ', (array) ( $pattern['keywords'] ?? [] ) ),
+					implode( ' ', (array) ( $pattern['categories'] ?? [] ) ),
+				]
+			)
+		);
+
+		$score = 0;
+		foreach ( $words as $word ) {
+			if ( str_contains( $haystack, $word ) ) {
+				++$score;
+			}
+		}
+
+		return $score;
 	}
 
 	/**

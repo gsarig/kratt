@@ -94,8 +94,8 @@ class PatternCatalogTest extends WP_UnitTestCase {
 		$this->assertStringNotContainsString( 'SECRET_CONTENT_STRING', $output );
 	}
 
-	public function test_get_patterns_respects_max_cap(): void {
-		for ( $i = 1; $i <= 35; $i++ ) {
+	public function test_get_patterns_returns_all_described_patterns(): void {
+		for ( $i = 1; $i <= 5; $i++ ) {
 			$this->register_test_pattern(
 				"kratt-test/pattern-{$i}",
 				[
@@ -108,26 +108,52 @@ class PatternCatalogTest extends WP_UnitTestCase {
 
 		$result = PatternCatalog::get_patterns();
 
-		$this->assertLessThanOrEqual( 30, count( $result ) );
+		// All 5 described patterns should be returned; no cap applied here.
+		$this->assertGreaterThanOrEqual( 5, count( $result ) );
 	}
 
-	public function test_kratt_pattern_catalog_max_filter_is_respected(): void {
-		add_filter( 'kratt_pattern_catalog_max', fn() => 3 );
+	// =========================================================================
+	// select_for_prompt()
+	// =========================================================================
 
-		for ( $i = 1; $i <= 10; $i++ ) {
-			$this->register_test_pattern(
-				"kratt-test/capped-{$i}",
-				[
-					'title'       => "Capped Pattern {$i}",
-					'description' => "Description for capped pattern {$i}.",
-					'content'     => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
-				]
-			);
-		}
+	public function test_select_for_prompt_returns_all_when_within_max(): void {
+		$patterns = [
+			'ns/hero'    => [ 'name' => 'ns/hero', 'title' => 'Hero', 'description' => 'A hero section.', 'keywords' => [], 'categories' => [] ],
+			'ns/pricing' => [ 'name' => 'ns/pricing', 'title' => 'Pricing', 'description' => 'A pricing table.', 'keywords' => [], 'categories' => [] ],
+		];
 
-		$result = PatternCatalog::get_patterns();
+		$result = PatternCatalog::select_for_prompt( $patterns, 'hero section', 10 );
 
-		$this->assertLessThanOrEqual( 3, count( $result ) );
+		$this->assertCount( 2, $result );
+	}
+
+	public function test_select_for_prompt_ranks_relevant_patterns_first(): void {
+		$patterns = [
+			'ns/pricing' => [ 'name' => 'ns/pricing', 'title' => 'Pricing Table', 'description' => 'Compare pricing tiers.', 'keywords' => [], 'categories' => [] ],
+			'ns/hero'    => [ 'name' => 'ns/hero', 'title' => 'Hero Section', 'description' => 'Full-width hero with heading and button.', 'keywords' => [], 'categories' => [] ],
+			'ns/faq'     => [ 'name' => 'ns/faq', 'title' => 'FAQ', 'description' => 'Frequently asked questions accordion.', 'keywords' => [], 'categories' => [] ],
+		];
+
+		$result = PatternCatalog::select_for_prompt( $patterns, 'add a hero section', 1 );
+
+		$this->assertArrayHasKey( 'ns/hero', $result );
+		$this->assertArrayNotHasKey( 'ns/pricing', $result );
+		$this->assertArrayNotHasKey( 'ns/faq', $result );
+	}
+
+	public function test_select_for_prompt_falls_back_to_order_when_prompt_has_no_usable_words(): void {
+		$patterns = [
+			'ns/a' => [ 'name' => 'ns/a', 'title' => 'A', 'description' => 'First.', 'keywords' => [], 'categories' => [] ],
+			'ns/b' => [ 'name' => 'ns/b', 'title' => 'B', 'description' => 'Second.', 'keywords' => [], 'categories' => [] ],
+			'ns/c' => [ 'name' => 'ns/c', 'title' => 'C', 'description' => 'Third.', 'keywords' => [], 'categories' => [] ],
+		];
+
+		// All words are shorter than 3 characters so scoring is skipped.
+		$result = PatternCatalog::select_for_prompt( $patterns, 'a b', 2 );
+
+		$this->assertCount( 2, $result );
+		$this->assertArrayHasKey( 'ns/a', $result );
+		$this->assertArrayHasKey( 'ns/b', $result );
 	}
 
 	// =========================================================================
