@@ -123,18 +123,20 @@ class ComposeControllerTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'blocks', $data );
 	}
 
-	public function test_kratt_editor_content_max_chars_filter_is_respected(): void {
-		add_filter( 'kratt_editor_content_max_chars', fn() => 10 );
-
-		$captured_prompt = null;
+	public function test_kratt_editor_content_max_chars_filter_is_invoked_with_constant(): void {
+		// In KRATT_TEST_MODE, Client::compose() ignores editor_content entirely, so there
+		// is no observable truncation effect on the compose side. What we CAN verify is that
+		// apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS )
+		// is called with the right default — confirming the filter is wired up correctly.
+		// Truncation effect is verified in ReviewControllerTest via kratt_dummy_review_response,
+		// which does receive the (possibly truncated) editor_content string.
+		$received_value = null;
 		add_filter(
-			'kratt_dummy_response',
-			function ( array $blocks, string $prompt ) use ( &$captured_prompt ) {
-				$captured_prompt = $prompt;
-				return $blocks;
-			},
-			10,
-			2
+			'kratt_editor_content_max_chars',
+			function ( int $value ) use ( &$received_value ): int {
+				$received_value = $value;
+				return $value;
+			}
 		);
 
 		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
@@ -146,10 +148,7 @@ class ComposeControllerTest extends WP_UnitTestCase {
 
 		$this->controller->create_item( $request );
 
-		// The prompt embeds the (already-truncated) editor content.
-		// After truncation to 10 chars + ellipsis, 11+ consecutive 'x' chars must not appear.
-		$this->assertNotNull( $captured_prompt );
-		$this->assertStringNotContainsString( str_repeat( 'x', 11 ), $captured_prompt );
+		$this->assertSame( KRATT_EDITOR_CONTENT_MAX_CHARS, $received_value );
 	}
 
 	// =========================================================================
