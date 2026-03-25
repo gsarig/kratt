@@ -44,6 +44,7 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
 			error_log( 'Kratt compose: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
@@ -134,6 +135,7 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) || ! isset( $decoded['findings'] ) || ! is_array( $decoded['findings'] ) ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
 			error_log( 'Kratt review: unexpected AI response format. JSON error: ' . json_last_error_msg() . '. Raw response: ' . substr( $response, 0, 500 ) );
 			return [
 				'findings' => [],
@@ -292,6 +294,13 @@ class Client {
 		}
 
 		$pattern = $registry->get_registered( $pattern_name );
+
+		if ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) || ! is_string( $pattern['content'] ) || '' === $pattern['content'] ) {
+			return [
+				'error'      => __( 'The suggested pattern could not be loaded because it has no content.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
 
 		return [ 'pattern_content' => $pattern['content'] ];
 	}

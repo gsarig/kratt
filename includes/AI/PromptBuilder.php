@@ -40,7 +40,7 @@ class PromptBuilder {
 		];
 
 		if ( '' !== $patterns_section ) {
-			$rules_array[] = '9. If a registered pattern closely matches the user\'s request, prefer it over assembling blocks. Return {"pattern": "pattern-name"}. Only use a pattern if the match is strong; do not force a pattern when custom composition would better serve the request.';
+			$rules_array[] = '9. If a registered pattern closely matches the user\'s request, prefer it over assembling blocks. Return {"pattern": "pattern-namespace/pattern-name"} using the exact namespaced name from the Available Patterns list. Only use a pattern if the match is strong; do not force a pattern when custom composition would better serve the request.';
 		}
 
 		$rules = implode( "\n", $rules_array );

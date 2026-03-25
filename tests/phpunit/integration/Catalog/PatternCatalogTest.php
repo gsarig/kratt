@@ -27,6 +27,7 @@ class PatternCatalogTest extends WP_UnitTestCase {
 				unregister_block_pattern( $name );
 			}
 		}
+		remove_all_filters( 'kratt_pattern_catalog_max' );
 		parent::tearDown();
 	}
 
@@ -108,5 +109,79 @@ class PatternCatalogTest extends WP_UnitTestCase {
 		$result = PatternCatalog::get_patterns();
 
 		$this->assertLessThanOrEqual( 30, count( $result ) );
+	}
+
+	public function test_kratt_pattern_catalog_max_filter_is_respected(): void {
+		add_filter( 'kratt_pattern_catalog_max', fn() => 3 );
+
+		for ( $i = 1; $i <= 10; $i++ ) {
+			$this->register_test_pattern(
+				"kratt-test/capped-{$i}",
+				[
+					'title'       => "Capped Pattern {$i}",
+					'description' => "Description for capped pattern {$i}.",
+					'content'     => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
+				]
+			);
+		}
+
+		$result = PatternCatalog::get_patterns();
+
+		$this->assertLessThanOrEqual( 3, count( $result ) );
+	}
+
+	// =========================================================================
+	// filter_by_catalog()
+	// =========================================================================
+
+	public function test_filter_by_catalog_keeps_patterns_whose_blocks_are_in_catalog(): void {
+		$this->register_test_pattern(
+			'kratt-test/allowed-pattern',
+			[
+				'title'       => 'Allowed Pattern',
+				'description' => 'A pattern using only allowed blocks.',
+				'content'     => '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$patterns = PatternCatalog::get_patterns();
+		$catalog  = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result   = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayHasKey( 'kratt-test/allowed-pattern', $result );
+	}
+
+	public function test_filter_by_catalog_removes_patterns_with_disallowed_blocks(): void {
+		$this->register_test_pattern(
+			'kratt-test/blocked-pattern',
+			[
+				'title'       => 'Blocked Pattern',
+				'description' => 'A pattern using a block not in the catalog.',
+				'content'     => '<!-- wp:heading --><h2>Title</h2><!-- /wp:heading --><!-- wp:paragraph --><p>Body</p><!-- /wp:paragraph -->',
+			]
+		);
+
+		$patterns = PatternCatalog::get_patterns();
+		// Catalog has paragraph but not heading.
+		$catalog = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result  = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayNotHasKey( 'kratt-test/blocked-pattern', $result );
+	}
+
+	public function test_filter_by_catalog_removes_patterns_with_empty_content(): void {
+		$patterns = [
+			'kratt-test/empty' => [
+				'name'        => 'kratt-test/empty',
+				'title'       => 'Empty',
+				'description' => 'A pattern with no content.',
+				'content'     => '',
+			],
+		];
+
+		$catalog = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result  = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayNotHasKey( 'kratt-test/empty', $result );
 	}
 }

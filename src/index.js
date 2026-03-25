@@ -195,7 +195,7 @@ function KrattSidebar() {
 				return;
 			}
 
-			if ( response.pattern_content ) {
+			if ( typeof response.pattern_content === 'string' && response.pattern_content !== '' ) {
 				const parsedBlocks = parse( response.pattern_content );
 				if ( ! parsedBlocks.length ) {
 					addMessage( 'assistant', __( 'The pattern could not be parsed.', 'kratt' ), true );
