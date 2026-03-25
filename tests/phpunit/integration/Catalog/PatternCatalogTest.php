@@ -141,6 +141,25 @@ class PatternCatalogTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'ns/faq', $result );
 	}
 
+	public function test_select_for_prompt_returns_results_in_relevance_order(): void {
+		$patterns = [
+			'ns/pricing' => [ 'name' => 'ns/pricing', 'title' => 'Pricing Table', 'description' => 'Compare pricing tiers.', 'keywords' => [], 'categories' => [] ],
+			'ns/high'    => [ 'name' => 'ns/high', 'title' => 'Hero Section', 'description' => 'Full-width hero section with heading.', 'keywords' => [], 'categories' => [] ],
+			'ns/mid'     => [ 'name' => 'ns/mid', 'title' => 'Hero Banner', 'description' => 'A simple hero banner.', 'keywords' => [], 'categories' => [] ],
+			'ns/gallery' => [ 'name' => 'ns/gallery', 'title' => 'Gallery', 'description' => 'An image gallery.', 'keywords' => [], 'categories' => [] ],
+		];
+
+		// Scores for "hero section":
+		// ns/high scores 2 (title contains "hero" and "section")
+		// ns/mid scores 1 (title contains "hero")
+		// ns/pricing and ns/gallery score 0
+		$result = PatternCatalog::select_for_prompt( $patterns, 'hero section', 3 );
+		$keys   = array_keys( $result );
+
+		$this->assertSame( 'ns/high', $keys[0] );
+		$this->assertSame( 'ns/mid', $keys[1] );
+	}
+
 	public function test_select_for_prompt_falls_back_to_order_when_prompt_has_no_usable_words(): void {
 		$patterns = [
 			'ns/a' => [ 'name' => 'ns/a', 'title' => 'A', 'description' => 'First.', 'keywords' => [], 'categories' => [] ],

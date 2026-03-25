@@ -84,7 +84,16 @@ class PatternCatalog {
 
 		arsort( $scores );
 
-		return array_intersect_key( $patterns, array_slice( $scores, 0, $max, preserve_keys: true ) );
+		$top_scores = array_slice( $scores, 0, $max, preserve_keys: true );
+		$selected   = [];
+
+		foreach ( array_keys( $top_scores ) as $name ) {
+			if ( array_key_exists( $name, $patterns ) ) {
+				$selected[ $name ] = $patterns[ $name ];
+			}
+		}
+
+		return $selected;
 	}
 
 	/**

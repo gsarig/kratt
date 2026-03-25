@@ -116,12 +116,13 @@ class ComposeController extends WP_REST_Controller {
 			);
 		}
 
-		$instructions    = self::resolve_instructions( $post_id, $post_type );
-		$max_patterns    = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
-		$all_patterns    = PatternCatalog::filter_by_catalog( PatternCatalog::get_patterns(), $catalog );
-		$patterns        = PatternCatalog::select_for_prompt( $all_patterns, (string) $prompt, $max_patterns );
-		$patterns_prompt = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
-		$result          = Client::compose( $prompt, $editor_content, $catalog, $instructions, $patterns_prompt );
+		$instructions      = self::resolve_instructions( $post_id, $post_type );
+		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
+		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), (string) $prompt, $max_patterns * 2 );
+		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+		$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		$result            = Client::compose( $prompt, $editor_content, $catalog, $instructions, $patterns_prompt );
 
 		return rest_ensure_response( $result );
 	}
@@ -142,11 +143,12 @@ class ComposeController extends WP_REST_Controller {
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
 		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
 
-		$user_prompt     = $args['prompt'] ?? '';
-		$max_patterns    = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
-		$all_patterns    = PatternCatalog::filter_by_catalog( PatternCatalog::get_patterns(), $catalog );
-		$patterns        = PatternCatalog::select_for_prompt( $all_patterns, $user_prompt, $max_patterns );
-		$patterns_prompt = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		$user_prompt       = $args['prompt'] ?? '';
+		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
+		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
+		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+		$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
 
 		return Client::compose(
 			$user_prompt,

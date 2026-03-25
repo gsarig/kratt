@@ -290,9 +290,10 @@ class Client {
 	/**
 	 * Resolves a pattern name to its serialized block content, filtered against the catalog.
 	 *
-	 * Validates that the pattern is registered and has content, then runs its parsed
-	 * blocks through filter_unknown_blocks() so that prompt-injected pattern names
-	 * whose blocks fall outside the active catalog cannot bypass allowed_blocks enforcement.
+	 * Validates that the pattern is registered and has content, then parses the pattern
+	 * content into blocks and gates those blocks against the active catalog via
+	 * PatternCatalog::filter_by_catalog() so that prompt-injected pattern names whose
+	 * blocks fall outside the catalog cannot bypass allowed_blocks enforcement.
 	 *
 	 * @param string               $pattern_name The pattern identifier returned by the AI.
 	 * @param array<string, mixed> $catalog      The active block catalog, keyed by block name.
