@@ -177,7 +177,11 @@ class Client {
 			}
 
 			if ( isset( $finding['block_index'] ) ) {
-				$finding['block_index'] = (int) $finding['block_index'];
+				if ( is_int( $finding['block_index'] ) || ( is_string( $finding['block_index'] ) && ctype_digit( $finding['block_index'] ) ) ) {
+					$finding['block_index'] = (int) $finding['block_index'];
+				} else {
+					unset( $finding['block_index'] );
+				}
 			}
 
 			$result[] = $finding;

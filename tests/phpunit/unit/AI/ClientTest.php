@@ -536,4 +536,15 @@ class ClientTest extends WP_UnitTestCase {
 
 		$this->assertSame( 3, $result[0]['block_index'] );
 	}
+
+	public function test_filter_invalid_findings_drops_non_numeric_block_index(): void {
+		$findings = [
+			[ 'type' => 'structure', 'message' => 'Valid.', 'block_index' => 'not-a-number' ],
+		];
+
+		$result = Client::filter_invalid_findings( $findings );
+
+		$this->assertCount( 1, $result );
+		$this->assertArrayNotHasKey( 'block_index', $result[0] );
+	}
 }
