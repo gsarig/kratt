@@ -67,13 +67,24 @@ function KrattSidebar() {
 					if ( block.name === 'core/heading' && block.attributes?.level ) {
 						line += ` (H${ block.attributes.level })`;
 					}
-					const rawValue =
-						block.attributes?.content ??
-						block.attributes?.value ??
-						block.attributes?.caption ??
-						block.attributes?.label ??
-						'';
-					const raw = typeof rawValue === 'string' ? rawValue : '';
+					const attributeKeys = [
+						'content',
+						'value',
+						'caption',
+						'label',
+						'alt',
+						'text',
+					];
+					let raw = '';
+					if ( block.attributes && typeof block.attributes === 'object' ) {
+						for ( const key of attributeKeys ) {
+							const candidate = block.attributes[ key ];
+							if ( typeof candidate === 'string' && candidate.trim() !== '' ) {
+								raw = candidate;
+								break;
+							}
+						}
+					}
 					const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
 					if ( text ) {
 						const snippet = text.length > 80 ? text.slice( 0, 80 ) + '…' : text;
