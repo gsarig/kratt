@@ -334,6 +334,57 @@ class ComposeControllerTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'blocks', $response->get_data() );
 	}
 
+	public function test_nonexistent_post_id_is_rejected_and_context_falls_back_to_zero(): void {
+		$received_context = null;
+
+		add_filter(
+			'kratt_system_instructions',
+			function ( $instructions, $context ) use ( &$received_context ) {
+				$received_context = $context;
+				return $instructions;
+			},
+			10,
+			2
+		);
+
+		$admin = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/compose' );
+		$request->set_param( 'prompt', 'Add a heading.' );
+		$request->set_param( 'post_id', 999999 );
+		$this->controller->create_item( $request );
+
+		$this->assertSame( 0, $received_context['post_id'] );
+		$this->assertSame( '', $received_context['post_type'] );
+	}
+
+	public function test_post_type_is_derived_from_post_not_client(): void {
+		$received_context = null;
+
+		add_filter(
+			'kratt_system_instructions',
+			function ( $instructions, $context ) use ( &$received_context ) {
+				$received_context = $context;
+				return $instructions;
+			},
+			10,
+			2
+		);
+
+		$admin   = $this->factory()->user->create( [ 'role' => 'administrator' ] );
+		wp_set_current_user( $admin );
+		$post_id = $this->factory()->post->create( [ 'post_type' => 'post' ] );
+
+		$request = new WP_REST_Request( 'POST', '/kratt/v1/compose' );
+		$request->set_param( 'prompt', 'Add a heading.' );
+		$request->set_param( 'post_id', $post_id );
+		$request->set_param( 'post_type', 'spoofed_type' );
+		$this->controller->create_item( $request );
+
+		$this->assertSame( 'post', $received_context['post_type'] );
+	}
+
 	public function test_unsaved_post_sends_zero_post_id_in_context(): void {
 		$received_context = null;
 

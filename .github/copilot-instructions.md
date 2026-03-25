@@ -40,8 +40,8 @@ Review for **correctness, security, and reliability** — in that order.
 
 The following are part of the plugin's public API. Any change to them is a **breaking change** and must be flagged explicitly:
 
-- PHP filter hooks: `kratt_block_attribute_transform`, `kratt_dummy_response`, `kratt_system_instructions`
-- REST endpoints: `POST /kratt/v1/compose`, `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`
+- PHP filter hooks: `kratt_block_attribute_transform`, `kratt_dummy_response`, `kratt_dummy_review_response`, `kratt_system_instructions`, `kratt_editor_content_max_chars`, `kratt_block_snippet_max_chars`
+- REST endpoints: `POST /kratt/v1/compose`, `POST /kratt/v1/review`, `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`
 
 ## Intentional design decisions
 

@@ -74,10 +74,22 @@ class ReviewController extends WP_REST_Controller {
 		$post_id        = (int) $request->get_param( 'post_id' );
 		$post_type      = (string) $request->get_param( 'post_type' );
 
+		// Validate post context: if a post ID was supplied, confirm it exists and the current
+		// user can edit it. Derive post_type from the post to prevent client spoofing.
+		if ( $post_id > 0 ) {
+			$post = get_post( $post_id );
+			if ( ! $post || ! current_user_can( 'edit_post', $post_id ) ) {
+				$post_id   = 0;
+				$post_type = '';
+			} else {
+				$post_type = $post->post_type;
+			}
+		}
+
 		// Cap editor content to avoid excessive token usage, matching ComposeController.
 		$max_chars = (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS );
-		if ( mb_strlen( $editor_content ) > $max_chars ) {
-			$editor_content = mb_substr( $editor_content, 0, $max_chars ) . '…';
+		if ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
 		}
 
 		$catalog = BlockCatalog::get();
