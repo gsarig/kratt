@@ -21,8 +21,16 @@ elif [[ "$WP_VERSION" =~ ^[0-9]+\.[0-9]+$ ]]; then
 fi
 
 download() {
-  if command -v curl &> /dev/null; then curl -sL "$1" > "$2"
-  else wget -nv -O "$2" "$1"; fi
+  local url="$1" dest="$2"
+  if command -v curl &> /dev/null; then
+    local args=( -sL --fail )
+    if [[ -n "${GITHUB_TOKEN:-}" && ( "$url" == *"github.com"* || "$url" == *"githubusercontent.com"* ) ]]; then
+      args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
+    fi
+    curl "${args[@]}" "$url" > "$dest"
+  else
+    wget -nv -O "$dest" "$url"
+  fi
 }
 
 if [ ! -d "$WP_CORE_DIR" ]; then

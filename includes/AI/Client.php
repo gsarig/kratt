@@ -4,6 +4,8 @@ declare( strict_types=1 );
 
 namespace Kratt\AI;
 
+use Kratt\Catalog\PatternCatalog;
+
 class Client {
 
 	/**
@@ -13,9 +15,10 @@ class Client {
 	 * @param string               $editor_content          Current editor content for context.
 	 * @param array<string, mixed> $catalog                 The block catalog to pass to the AI.
 	 * @param string               $additional_instructions Extra instructions appended to the system prompt.
-	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}
+	 * @param string               $patterns_prompt         Formatted pattern list for the prompt; empty when no patterns.
+	 * @return array{blocks: array<mixed>}|array{error: string, suggestion?: string}|array{pattern_content: string}
 	 */
-	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '' ): array {
+	public static function compose( string $user_prompt, string $editor_content, array $catalog, string $additional_instructions = '', string $patterns_prompt = '' ): array {
 		if ( defined( 'KRATT_TEST_MODE' ) && KRATT_TEST_MODE ) {
 			$dummy              = self::dummy_response( $user_prompt );
 			$dummy['blocks']    = self::apply_block_attribute_transforms( $dummy['blocks'] );
@@ -26,7 +29,7 @@ class Client {
 			return [ 'error' => __( 'WP AI Client is not available. Please install a provider plugin.', 'kratt' ) ];
 		}
 
-		$system_prompt = PromptBuilder::build( $catalog, $editor_content, $additional_instructions );
+		$system_prompt = PromptBuilder::build( $catalog, $editor_content, $additional_instructions, $patterns_prompt );
 
 		$response = wp_ai_client_prompt( $user_prompt )
 			->using_system_instruction( $system_prompt )
@@ -43,7 +46,23 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) ) {
+			$log_message = 'Kratt compose: unexpected AI response format. JSON error: ' . json_last_error_msg();
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$log_message .= '. Raw response: ' . substr( $response, 0, 500 );
+			}
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
+			error_log( $log_message );
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
+		}
+
+		if ( '' !== $patterns_prompt && isset( $decoded['pattern'] ) ) {
+			if ( ! is_string( $decoded['pattern'] ) ) {
+				return [
+					'error'      => __( 'The AI returned an unexpected response format.', 'kratt' ),
+					'suggestion' => __( 'Please try again or rephrase your request.', 'kratt' ),
+				];
+			}
+			return self::resolve_pattern( $decoded['pattern'], $catalog );
 		}
 
 		if ( isset( $decoded['blocks'] ) && is_array( $decoded['blocks'] ) ) {
@@ -128,6 +147,12 @@ class Client {
 		$decoded = json_decode( self::strip_json_fences( $response ), associative: true );
 
 		if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $decoded ) || ! isset( $decoded['findings'] ) || ! is_array( $decoded['findings'] ) ) {
+			$log_message = 'Kratt review: unexpected AI response format. JSON error: ' . json_last_error_msg();
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				$log_message .= '. Raw response: ' . substr( $response, 0, 500 );
+			}
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- intentional production logging for malformed AI responses.
+			error_log( $log_message );
 			return [
 				'findings' => [],
 				'error'    => __( 'The AI returned an unexpected response format.', 'kratt' ),
@@ -266,6 +291,55 @@ class Client {
 		unset( $block );
 
 		return $blocks;
+	}
+
+	/**
+	 * Resolves a pattern name to its serialized block content, filtered against the catalog.
+	 *
+	 * Validates that the pattern is registered and has content, then parses the pattern
+	 * content into blocks and gates those blocks against the active catalog via
+	 * PatternCatalog::filter_by_catalog() so that prompt-injected pattern names whose
+	 * blocks fall outside the catalog cannot bypass allowed_blocks enforcement.
+	 *
+	 * @param string               $pattern_name The pattern identifier returned by the AI.
+	 * @param array<string, mixed> $catalog      The active block catalog, keyed by block name.
+	 * @return array{pattern_content: string}|array{error: string, suggestion: string}
+	 */
+	public static function resolve_pattern( string $pattern_name, array $catalog ): array {
+		$registry = \WP_Block_Patterns_Registry::get_instance();
+
+		if ( ! $registry->is_registered( $pattern_name ) ) {
+			return [
+				'error'      => __( 'The suggested pattern does not exist on this site.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
+
+		$pattern = $registry->get_registered( $pattern_name );
+
+		if ( ! is_array( $pattern ) || ! isset( $pattern['content'] ) || ! is_string( $pattern['content'] ) || '' === $pattern['content'] ) {
+			return [
+				'error'      => __( 'The suggested pattern could not be loaded because it has no content.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
+
+		// Guard against prompt injection: validate the pattern's blocks against the active
+		// catalog. parse_blocks() output uses 'blockName' (WP format), so we delegate to
+		// PatternCatalog::filter_by_catalog() which already handles that format correctly.
+		$allowed = PatternCatalog::filter_by_catalog(
+			[ $pattern_name => [ 'content' => $pattern['content'] ] ],
+			$catalog
+		);
+
+		if ( empty( $allowed ) ) {
+			return [
+				'error'      => __( 'The suggested pattern contains blocks that are not available on this site.', 'kratt' ),
+				'suggestion' => __( 'Try describing what you want in more detail so blocks can be assembled instead.', 'kratt' ),
+			];
+		}
+
+		return [ 'pattern_content' => $pattern['content'] ];
 	}
 
 	/**
