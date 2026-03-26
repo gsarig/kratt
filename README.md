@@ -24,6 +24,8 @@ The catalog is built from the WordPress block registry at activation time. It te
 ## Features
 
 - **Natural language composition** — describe layouts, sections, or single blocks in plain English
+- **Pattern-aware** — prefers registered block patterns when they match the request; falls back to assembling from individual blocks
+- **Content review** — analyses existing editor content and returns structured findings for structure, accessibility, and consistency
 - **Aware of all site blocks** — catalog is built from the live block registry, including theme and plugin blocks
 - **Cursor-aware insertion** — blocks are inserted after the currently selected block, or at the end of the document
 - **Nested block support** — containers (columns, groups, covers) are assembled with their inner blocks intact
@@ -88,6 +90,20 @@ Type what you want to build in the text area and press **Enter** (or click **Gen
 Kratt inserts the generated blocks after the currently selected block. If nothing is selected, blocks are added at the end of the document.
 
 Shift+Enter adds a new line in the text area without submitting.
+
+### Review
+
+When the text area is empty, the **Review** button becomes available. Click it to ask Kratt to analyse the current editor content and return a list of findings grouped into three categories:
+
+- **Structure** — heading hierarchy, logical flow, appropriate block usage
+- **Accessibility** — missing alt text, non-descriptive link or button labels, heading level issues
+- **Consistency** — tone, terminology, and formatting patterns across the content
+
+[![Kratt patterns and review demo](https://raw.githubusercontent.com/gsarig/kratt/main/.github/assets/kratt-patterns-review.png)](https://www.youtube.com/watch?v=N6JiZHuFenk)
+
+*Click the image to watch the patterns and review demo on YouTube.*
+
+Each finding includes a short description of the issue and a concrete suggestion for fixing it. An empty findings list means no issues were detected.
 
 ---
 
