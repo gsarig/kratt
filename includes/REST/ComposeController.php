@@ -77,7 +77,7 @@ class ComposeController extends WP_REST_Controller {
 	 * @return WP_REST_Response|\WP_Error
 	 */
 	public function create_item( $request ) {
-		$prompt         = $request->get_param( 'prompt' );
+		$prompt         = (string) $request->get_param( 'prompt' );
 		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
 		$allowed_blocks = $request->get_param( 'allowed_blocks' );
 		$post_id        = (int) $request->get_param( 'post_id' );

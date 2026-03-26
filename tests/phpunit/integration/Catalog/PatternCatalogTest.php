@@ -116,6 +116,22 @@ class PatternCatalogTest extends WP_UnitTestCase {
 	// select_for_prompt()
 	// =========================================================================
 
+	public function test_select_for_prompt_returns_empty_when_max_is_zero(): void {
+		$patterns = [
+			'ns/hero' => [ 'name' => 'ns/hero', 'title' => 'Hero', 'description' => 'A hero section.', 'keywords' => [], 'categories' => [] ],
+		];
+
+		$this->assertSame( [], PatternCatalog::select_for_prompt( $patterns, 'hero', 0 ) );
+	}
+
+	public function test_select_for_prompt_returns_empty_when_max_is_negative(): void {
+		$patterns = [
+			'ns/hero' => [ 'name' => 'ns/hero', 'title' => 'Hero', 'description' => 'A hero section.', 'keywords' => [], 'categories' => [] ],
+		];
+
+		$this->assertSame( [], PatternCatalog::select_for_prompt( $patterns, 'hero', -1 ) );
+	}
+
 	public function test_select_for_prompt_returns_all_when_within_max(): void {
 		$patterns = [
 			'ns/hero'    => [ 'name' => 'ns/hero', 'title' => 'Hero', 'description' => 'A hero section.', 'keywords' => [], 'categories' => [] ],

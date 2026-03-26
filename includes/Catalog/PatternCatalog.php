@@ -61,6 +61,10 @@ class PatternCatalog {
 	 * @return array<string, array<string, mixed>>
 	 */
 	public static function select_for_prompt( array $patterns, string $prompt, int $max ): array {
+		if ( $max <= 0 ) {
+			return [];
+		}
+
 		if ( count( $patterns ) <= $max ) {
 			return $patterns;
 		}
