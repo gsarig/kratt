@@ -56,6 +56,10 @@ Every compose request sends the full system prompt (block catalog + rules) to th
 
 ## Known limitations
 
+### Focused review is not wired in the UI
+
+`ReviewController` accepts a `focus` parameter that narrows the AI's review to a specific concern. The Review button in the sidebar is disabled whenever the textarea has text, so there is no way to trigger a focused review from the UI today. The API is ready; the sidebar just needs to stop disabling Review when text is present and forward the textarea value as `focus` rather than as a compose prompt.
+
 ### Editor content truncation in compose and review requests
 
 Both `ComposeController` and `ReviewController` cap `editor_content` at 8000 characters before forwarding it to the AI. Content beyond that limit is silently dropped. For compose requests this is mostly harmless — the editor content is read-only context. For review requests it is a real problem: blocks beyond the cut-off are never seen by the AI, which will then produce findings only for the visible portion without any indication that the review is incomplete.

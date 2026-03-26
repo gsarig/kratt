@@ -28,7 +28,30 @@ class ReviewController extends WP_REST_Controller {
 					'editor_content' => [
 						'type'              => 'string',
 						'default'           => '',
-						'sanitize_callback' => 'wp_kses_post',
+						'sanitize_callback' => static function ( mixed $value ): string {
+							if ( ! is_string( $value ) ) {
+								return '';
+							}
+							// wp_kses_post strips HTML comments, including WordPress block
+							// delimiters (<!-- wp:... -->). Those are needed for accurate
+							// block_index values in AI findings. Extract them first, run
+							// wp_kses_post on the remainder, then restore.
+							$preserved = [];
+							$sanitized = preg_replace_callback(
+								'/<!--\s*\/?wp:[\s\S]*?-->/',
+								static function ( array $m ) use ( &$preserved ): string {
+									$key               = 'KRATTBLK' . count( $preserved ) . 'END';
+									$preserved[ $key ] = $m[0];
+									return $key;
+								},
+								$value
+							) ?? $value;
+							$sanitized = wp_kses_post( $sanitized );
+							foreach ( $preserved as $key => $comment ) {
+								$sanitized = str_replace( $key, $comment, $sanitized );
+							}
+							return $sanitized;
+						},
 					],
 					'focus'          => [
 						'type'              => 'string',
@@ -97,6 +120,7 @@ class ReviewController extends WP_REST_Controller {
 		if ( empty( $catalog ) ) {
 			return rest_ensure_response(
 				[
+					'findings'   => [],
 					'error'      => __( 'No blocks are available. Please run a catalog scan from the Kratt settings page.', 'kratt' ),
 					'suggestion' => __( 'Go to Settings → Kratt and click "Rescan Blocks".', 'kratt' ),
 				]
