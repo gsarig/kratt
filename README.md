@@ -34,6 +34,8 @@ The catalog is built from the WordPress block registry at activation time. It te
 - **Collapsible message history** — recent messages are always visible; older ones are grouped under a toggle
 - **Test mode** — a `KRATT_TEST_MODE` constant lets you develop and style without burning API tokens
 
+![Kratt patterns and review](https://raw.githubusercontent.com/gsarig/kratt/main/.github/assets/kratt-patterns-review.png)
+
 ---
 
 ## Requirements
