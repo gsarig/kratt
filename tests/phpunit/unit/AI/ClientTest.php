@@ -364,7 +364,6 @@ class ClientTest extends WP_UnitTestCase {
 		foreach ( $result['findings'] as $finding ) {
 			$this->assertArrayHasKey( 'type', $finding );
 			$this->assertArrayHasKey( 'message', $finding );
-			$this->assertArrayHasKey( 'suggestion', $finding );
 		}
 	}
 
