@@ -116,12 +116,16 @@ class ComposeController extends WP_REST_Controller {
 			);
 		}
 
-		$instructions      = self::resolve_instructions( $post_id, $post_type );
-		$max_patterns      = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
-		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), (string) $prompt, $max_patterns * 2 );
-		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
-		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
-		$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		$instructions = self::resolve_instructions( $post_id, $post_type );
+		$max_patterns = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
+
+		$patterns_prompt = '';
+		if ( $max_patterns > 0 ) {
+			$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), (string) $prompt, $max_patterns * 2 );
+			$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+			$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+			$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		}
 		$result            = Client::compose( $prompt, $editor_content, $catalog, $instructions, $patterns_prompt );
 
 		return rest_ensure_response( $result );
@@ -153,13 +157,17 @@ class ComposeController extends WP_REST_Controller {
 			}
 		}
 
-		$user_prompt       = (string) ( $args['prompt'] ?? '' );
-		$editor_content    = (string) ( $args['editor_content'] ?? '' );
-		$max_patterns      = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
-		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
-		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
-		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
-		$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		$user_prompt  = (string) ( $args['prompt'] ?? '' );
+		$editor_content = (string) ( $args['editor_content'] ?? '' );
+		$max_patterns = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
+
+		$patterns_prompt = '';
+		if ( $max_patterns > 0 ) {
+			$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
+			$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+			$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+			$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		}
 
 		return Client::compose(
 			$user_prompt,
