@@ -159,8 +159,17 @@ class ComposeController extends WP_REST_Controller {
 			}
 		}
 
-		$user_prompt  = (string) ( $args['prompt'] ?? '' );
-		$editor_content = (string) ( $args['editor_content'] ?? '' );
+		$user_prompt    = sanitize_text_field( (string) ( $args['prompt'] ?? '' ) );
+		$editor_content = wp_kses_post( (string) ( $args['editor_content'] ?? '' ) );
+
+		// Cap editor content to avoid excessive token usage, matching create_item().
+		$max_chars = max( 0, (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS ) );
+		if ( 0 === $max_chars ) {
+			$editor_content = '';
+		} elseif ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
+		}
+
 		$max_patterns = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
 
 		$patterns_prompt = '';

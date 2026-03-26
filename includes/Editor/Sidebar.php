@@ -27,7 +27,7 @@ class Sidebar {
 			'kratt-sidebar',
 			'krattData',
 			[
-				'blockSnippetMaxChars' => (int) apply_filters( 'kratt_block_snippet_max_chars', KRATT_BLOCK_SNIPPET_MAX_CHARS ),
+				'blockSnippetMaxChars' => max( 0, (int) apply_filters( 'kratt_block_snippet_max_chars', KRATT_BLOCK_SNIPPET_MAX_CHARS ) ),
 			]
 		);
 
