@@ -99,7 +99,7 @@ When the text area is empty, the **Review** button becomes available. Click it t
 - **Accessibility** — missing alt text, non-descriptive link or button labels, heading level issues
 - **Consistency** — tone, terminology, and formatting patterns across the content
 
-[![Kratt patterns and review demo](https://raw.githubusercontent.com/gsarig/kratt/main/.github/assets/kratt-patterns-review.png)](https://www.youtube.com/watch?v=N6JiZHuFenk)
+[![Kratt patterns and review demo](https://img.youtube.com/vi/N6JiZHuFenk/maxresdefault.jpg)](https://www.youtube.com/watch?v=N6JiZHuFenk)
 
 *Click the image to watch the patterns and review demo on YouTube.*
 
