@@ -116,10 +116,14 @@ jobs:
         id: wp-version
         run: |
           if [[ "${{ matrix.wp-version }}" == "latest" ]]; then
-            VERSION=$(curl -s https://api.wordpress.org/core/version-check/1.7/ \
+            VERSION=$(curl -fsS https://api.wordpress.org/core/version-check/1.7/ \
               | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)
           else
             VERSION="${{ matrix.wp-version }}"
+          fi
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to resolve WordPress version" >&2
+            exit 1
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
