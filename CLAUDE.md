@@ -294,6 +294,24 @@ mismatch causes silent failures where every block is treated as unknown. When wo
 with parsed WP content, use `PatternCatalog::filter_by_catalog()`. When working with AI
 response blocks, use `filter_unknown_blocks()`.
 
+### Always type-guard WP_Block_Patterns_Registry output
+
+WordPress does not enforce field types on pattern registration. Both `get_registered()`
+and `get_all_registered()` return `mixed` for every field. Always apply explicit
+`is_string()` / `is_array()` checks before using any field value:
+
+```php
+$content = $pattern['content'] ?? '';
+if ( ! is_string( $content ) || '' === $content ) {
+    // skip or return error
+}
+```
+
+This rule was earned twice: once when `resolve_pattern()` lacked a content type check,
+and again when `get_patterns()` and `filter_by_catalog()` were missing guards on
+`description`, `name`, `categories`, and `keywords`. A missing guard causes a type
+error or silent wrong behavior at runtime.
+
 ### Ability name matching
 
 The normalization function strips all non-alphanumeric characters and lowercases. It
