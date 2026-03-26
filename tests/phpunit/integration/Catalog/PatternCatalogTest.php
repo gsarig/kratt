@@ -260,6 +260,21 @@ class PatternCatalogTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'ns/whitespace', $result );
 	}
 
+	public function test_filter_by_catalog_skips_pattern_with_non_string_content(): void {
+		$patterns = [
+			'ns/bad-content' => [
+				'name'    => 'ns/bad-content',
+				'title'   => 'Bad',
+				'content' => [ 'not', 'a', 'string' ],
+			],
+		];
+
+		$catalog = [ 'core/paragraph' => [ 'name' => 'core/paragraph' ] ];
+		$result  = PatternCatalog::filter_by_catalog( $patterns, $catalog );
+
+		$this->assertArrayNotHasKey( 'ns/bad-content', $result );
+	}
+
 	public function test_filter_by_catalog_removes_patterns_with_empty_content(): void {
 		$patterns = [
 			'kratt-test/empty' => [

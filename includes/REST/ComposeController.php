@@ -143,7 +143,8 @@ class ComposeController extends WP_REST_Controller {
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
 		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
 
-		$user_prompt       = $args['prompt'] ?? '';
+		$user_prompt       = (string) ( $args['prompt'] ?? '' );
+		$editor_content    = (string) ( $args['editor_content'] ?? '' );
 		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
 		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
 		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
@@ -152,7 +153,7 @@ class ComposeController extends WP_REST_Controller {
 
 		return Client::compose(
 			$user_prompt,
-			$args['editor_content'] ?? '',
+			$editor_content,
 			$catalog,
 			self::resolve_instructions( $post_id, $post_type ),
 			$patterns_prompt

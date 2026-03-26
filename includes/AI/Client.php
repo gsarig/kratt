@@ -55,7 +55,13 @@ class Client {
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
-		if ( isset( $decoded['pattern'] ) && is_string( $decoded['pattern'] ) ) {
+		if ( isset( $decoded['pattern'] ) ) {
+			if ( ! is_string( $decoded['pattern'] ) ) {
+				return [
+					'error'      => __( 'The AI returned an unexpected response format.', 'kratt' ),
+					'suggestion' => __( 'Please try again or rephrase your request.', 'kratt' ),
+				];
+			}
 			return self::resolve_pattern( $decoded['pattern'], $catalog );
 		}
 

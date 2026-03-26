@@ -23,22 +23,23 @@ class PatternCatalog {
 
 		foreach ( $registered as $pattern ) {
 			$description = $pattern['description'] ?? '';
-			if ( '' === $description ) {
+			if ( ! is_string( $description ) || '' === $description ) {
 				continue;
 			}
 
 			$name = $pattern['name'] ?? '';
-			if ( '' === $name ) {
+			if ( ! is_string( $name ) || '' === $name ) {
 				continue;
 			}
 
+			$title = $pattern['title'] ?? '';
 			$patterns[ $name ] = [
 				'name'        => $name,
-				'title'       => $pattern['title'] ?? $name,
+				'title'       => is_string( $title ) && '' !== $title ? $title : $name,
 				'description' => $description,
-				'categories'  => $pattern['categories'] ?? [],
-				'keywords'    => $pattern['keywords'] ?? [],
-				'content'     => $pattern['content'] ?? '',
+				'categories'  => is_array( $pattern['categories'] ?? null ) ? $pattern['categories'] : [],
+				'keywords'    => is_array( $pattern['keywords'] ?? null ) ? $pattern['keywords'] : [],
+				'content'     => is_string( $pattern['content'] ?? null ) ? $pattern['content'] : '',
 			];
 		}
 
@@ -149,7 +150,7 @@ class PatternCatalog {
 			$patterns,
 			static function ( array $pattern ) use ( $catalog ): bool {
 				$content = $pattern['content'] ?? '';
-				if ( '' === $content ) {
+				if ( ! is_string( $content ) || '' === $content ) {
 					return false;
 				}
 				return self::all_blocks_in_catalog( parse_blocks( $content ), $catalog );
