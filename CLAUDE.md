@@ -160,6 +160,21 @@ kratt/
 
 ---
 
+## Release process
+
+Tagging triggers the release workflow automatically — do not create releases manually.
+
+```bash
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+`.github/workflows/release.yml` runs on every tag push. It builds the JS, installs production-only Composer dependencies, assembles a zip (exclusions from `.distignore`), and creates a **draft** GitHub Release with the zip attached. Go to GitHub Releases to review and publish the draft.
+
+The workflow also has a `workflow_dispatch` input (`tag_name`) for rerunning against an existing tag without re-pushing it.
+
+---
+
 ## Commands
 
 ### Setup
