@@ -145,4 +145,146 @@ class PromptBuilderTest extends WP_UnitTestCase {
 
 		$this->assertGreaterThan( $rules_pos, $instructions_pos );
 	}
+
+	// =========================================================================
+	// Patterns section
+	// =========================================================================
+
+	public function test_prompt_contains_patterns_section_when_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( '## Available Patterns', $prompt );
+	}
+
+	public function test_prompt_omits_patterns_section_when_empty(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		$this->assertStringNotContainsString( '## Available Patterns', $prompt );
+	}
+
+	public function test_patterns_section_appears_after_blocks_section(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$blocks_pos   = strpos( $prompt, '## Available Blocks' );
+		$patterns_pos = strpos( $prompt, '## Available Patterns' );
+
+		$this->assertNotFalse( $blocks_pos );
+		$this->assertNotFalse( $patterns_pos );
+		$this->assertGreaterThan( $blocks_pos, $patterns_pos );
+	}
+
+	public function test_prompt_contains_pattern_rule_when_patterns_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( '"pattern"', $prompt );
+	}
+
+	public function test_prompt_omits_pattern_rule_when_no_patterns(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		$this->assertStringNotContainsString( 'If a registered pattern closely matches', $prompt );
+	}
+
+	public function test_response_format_mentions_pattern_alternative_when_patterns_provided(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', 'my-theme/hero (Hero): A hero pattern.' );
+
+		$this->assertStringContainsString( 'pattern-namespace/pattern-name', $prompt );
+		$this->assertStringContainsString( 'Available Patterns list', $prompt );
+	}
+
+	public function test_response_format_omits_pattern_alternative_when_no_patterns(): void {
+		$prompt = PromptBuilder::build( $this->minimal_catalog(), '', '', '' );
+
+		// The pattern-reference format should not appear in the Response Format section.
+		$response_format_pos = strpos( $prompt, '## Response Format' );
+		$rules_pos           = strpos( $prompt, '## Rules' );
+
+		$this->assertNotFalse( $response_format_pos, 'Expected "## Response Format" heading in prompt.' );
+		$this->assertNotFalse( $rules_pos, 'Expected "## Rules" heading in prompt.' );
+
+		$response_format = substr( $prompt, (int) $response_format_pos, (int) $rules_pos - (int) $response_format_pos );
+
+		$this->assertStringNotContainsString( 'pattern-namespace/pattern-name', $response_format );
+	}
+
+	// =========================================================================
+	// build_review()
+	// =========================================================================
+
+	public function test_build_review_contains_available_blocks_section(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog() );
+
+		$this->assertStringContainsString( '## Available Blocks', $prompt );
+	}
+
+	public function test_build_review_contains_block_from_catalog(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog() );
+
+		$this->assertStringContainsString( 'core/paragraph', $prompt );
+	}
+
+	public function test_build_review_contains_editor_content_when_provided(): void {
+		$content = '<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->';
+		$prompt  = PromptBuilder::build_review( $this->minimal_catalog(), $content );
+
+		$this->assertStringContainsString( $content, $prompt );
+	}
+
+	public function test_build_review_shows_empty_message_when_no_content(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '' );
+
+		$this->assertStringContainsString( 'The editor is currently empty.', $prompt );
+	}
+
+	public function test_build_review_contains_review_categories_section(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog() );
+
+		$this->assertStringContainsString( '## Review Categories', $prompt );
+		$this->assertStringContainsString( 'structure', $prompt );
+		$this->assertStringContainsString( 'accessibility', $prompt );
+		$this->assertStringContainsString( 'consistency', $prompt );
+	}
+
+	public function test_build_review_contains_response_format_section(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog() );
+
+		$this->assertStringContainsString( '## Response Format', $prompt );
+		$this->assertStringContainsString( '"findings"', $prompt );
+	}
+
+	public function test_build_review_no_focus_section_when_empty(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '' );
+
+		$this->assertStringNotContainsString( '## Review Focus', $prompt );
+	}
+
+	public function test_build_review_contains_focus_section_when_provided(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', 'Check accessibility only.' );
+
+		$this->assertStringContainsString( '## Review Focus', $prompt );
+		$this->assertStringContainsString( 'Check accessibility only.', $prompt );
+	}
+
+	public function test_build_review_no_additional_instructions_when_empty(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', '' );
+
+		$this->assertStringNotContainsString( '## Additional Instructions', $prompt );
+	}
+
+	public function test_build_review_contains_additional_instructions_when_provided(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', 'Be concise.' );
+
+		$this->assertStringContainsString( '## Additional Instructions', $prompt );
+		$this->assertStringContainsString( 'Be concise.', $prompt );
+	}
+
+	public function test_build_review_additional_criteria_appears_after_response_format(): void {
+		$prompt = PromptBuilder::build_review( $this->minimal_catalog(), '', '', 'Custom rule.' );
+
+		$criteria_pos        = strpos( $prompt, '## Additional Instructions' );
+		$response_format_pos = strpos( $prompt, '## Response Format' );
+
+		$this->assertGreaterThan( 0, $criteria_pos );
+		$this->assertGreaterThan( $response_format_pos, $criteria_pos );
+	}
 }

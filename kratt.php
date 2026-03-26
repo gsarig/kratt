@@ -3,7 +3,7 @@
  * Plugin Name: Kratt
  * Plugin URI:  https://github.com/gsarig/kratt
  * Description: WordPress AI block composer — generate and insert blocks via natural language using the WP AI Client.
- * Version:     0.1.0
+ * Version:     0.2.0
  * Requires at least: 7.0
  * Requires PHP: 8.1
  * Author:      Giorgos Sarigiannidis
@@ -19,10 +19,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'KRATT_VERSION', '0.1.0' );
+define( 'KRATT_VERSION', '0.2.0' );
 define( 'KRATT_DIR', plugin_dir_path( __FILE__ ) );
 define( 'KRATT_URL', plugin_dir_url( __FILE__ ) );
 define( 'KRATT_FILE', __FILE__ );
+define( 'KRATT_EDITOR_CONTENT_MAX_CHARS', 8000 );
+define( 'KRATT_BLOCK_SNIPPET_MAX_CHARS', 300 );
+define( 'KRATT_MAX_PATTERNS', 100 );
 
 if ( file_exists( KRATT_DIR . 'vendor/autoload.php' ) ) {
 	require_once KRATT_DIR . 'vendor/autoload.php';

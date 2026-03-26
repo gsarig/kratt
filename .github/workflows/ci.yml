@@ -113,9 +113,32 @@ jobs:
           restore-keys: |
             composer-v2-${{ runner.os }}-
       - run: composer install --no-interaction --prefer-dist --no-progress
-      - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ matrix.wp-version }}
+      - name: Resolve WordPress version
+        id: wp-version
+        run: |
+          if [[ "${{ matrix.wp-version }}" == "latest" ]]; then
+            VERSION=$(curl -fsS https://api.wordpress.org/core/version-check/1.7/ \
+              | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)
+          else
+            VERSION="${{ matrix.wp-version }}"
+          fi
+          if [[ -z "$VERSION" ]]; then
+            echo "Failed to resolve WordPress version" >&2
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: wp-tests-cache
+        with:
+          path: |
+            /tmp/wordpress
+            /tmp/wordpress-tests-lib
+          key: wp-tests-${{ steps.wp-version.outputs.version }}-${{ hashFiles('bin/install-wp-tests.sh') }}
+      - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ steps.wp-version.outputs.version }}
+        if: steps.wp-tests-cache.outputs.cache-hit != 'true'
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: vendor/bin/phpunit
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib

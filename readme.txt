@@ -3,7 +3,7 @@ Contributors: gsarig
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.1.0
+Stable tag: 0.2.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,6 +18,8 @@ The catalog is built from the WordPress block registry at activation time. It te
 = Features =
 
 * Natural language composition — describe layouts, sections, or single blocks in plain English
+* Pattern-aware — prefers registered block patterns when they match the request; falls back to assembling from individual blocks
+* Content review — analyses existing editor content and returns structured findings for structure, accessibility, and consistency
 * Aware of all site blocks — catalog is built from the live block registry, including theme and plugin blocks
 * Cursor-aware insertion — blocks are inserted after the currently selected block, or at the end of the document
 * Nested block support — containers (columns, groups, covers) are assembled with their inner blocks intact
@@ -53,6 +55,12 @@ Only blocks in the catalog. The AI is instructed never to invent block names, an
 Click **Rescan Blocks** on the Settings → Kratt page. The catalog is also rebuilt automatically when any plugin or theme is activated.
 
 == Changelog ==
+
+= 0.2.0 =
+* Content review: new Review button analyses existing editor content and returns structured findings (structure, accessibility, consistency) via a new `POST /kratt/v1/review` endpoint.
+* Pattern support: when a registered block pattern matches the request, Kratt now inserts the pattern instead of assembling an equivalent layout from individual blocks.
+* New filter hooks: `kratt_dummy_review_response`, `kratt_editor_content_max_chars`, `kratt_block_snippet_max_chars`, `kratt_pattern_catalog_max`.
+* CI reliability improvements: authenticated GitHub downloads and version-pinned test suite cache.
 
 = 0.1.0 =
 * Initial release.

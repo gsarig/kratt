@@ -6,6 +6,7 @@ namespace Kratt\REST;
 
 use Kratt\AI\Client;
 use Kratt\Catalog\BlockCatalog;
+use Kratt\Catalog\PatternCatalog;
 use Kratt\Settings\Settings;
 use WP_REST_Controller;
 use WP_REST_Request;
@@ -76,15 +77,30 @@ class ComposeController extends WP_REST_Controller {
 	 * @return WP_REST_Response|\WP_Error
 	 */
 	public function create_item( $request ) {
-		$prompt         = $request->get_param( 'prompt' );
+		$prompt         = (string) $request->get_param( 'prompt' );
 		$editor_content = (string) ( $request->get_param( 'editor_content' ) ?? '' );
 		$allowed_blocks = $request->get_param( 'allowed_blocks' );
 		$post_id        = (int) $request->get_param( 'post_id' );
 		$post_type      = (string) $request->get_param( 'post_type' );
 
+		// Validate post context: if a post ID was supplied, confirm it exists and the current
+		// user can edit it. Derive post_type from the post to prevent client spoofing.
+		if ( $post_id > 0 ) {
+			$post = get_post( $post_id );
+			if ( ! $post || ! current_user_can( 'edit_post', $post_id ) ) {
+				$post_id   = 0;
+				$post_type = '';
+			} else {
+				$post_type = $post->post_type;
+			}
+		}
+
 		// Cap editor content to avoid excessive token usage.
-		if ( strlen( $editor_content ) > 8000 ) {
-			$editor_content = substr( $editor_content, 0, 8000 ) . '…';
+		$max_chars = max( 0, (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS ) );
+		if ( 0 === $max_chars ) {
+			$editor_content = '';
+		} elseif ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
 		}
 
 		$catalog = BlockCatalog::get();
@@ -103,7 +119,16 @@ class ComposeController extends WP_REST_Controller {
 		}
 
 		$instructions = self::resolve_instructions( $post_id, $post_type );
-		$result       = Client::compose( $prompt, $editor_content, $catalog, $instructions );
+		$max_patterns = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
+
+		$patterns_prompt = '';
+		if ( $max_patterns > 0 ) {
+			$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), (string) $prompt, $max_patterns * 2 );
+			$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+			$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+			$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		}
+		$result            = Client::compose( $prompt, $editor_content, $catalog, $instructions, $patterns_prompt );
 
 		return rest_ensure_response( $result );
 	}
@@ -122,13 +147,45 @@ class ComposeController extends WP_REST_Controller {
 		}
 
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
-		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
+		$post_type = isset( $args['post_type'] ) ? sanitize_key( (string) $args['post_type'] ) : '';
+
+		if ( $post_id > 0 ) {
+			$post = get_post( $post_id );
+			if ( ! $post || ! current_user_can( 'edit_post', $post_id ) ) {
+				$post_id   = 0;
+				$post_type = '';
+			} else {
+				$post_type = $post->post_type;
+			}
+		}
+
+		$user_prompt    = sanitize_text_field( (string) ( $args['prompt'] ?? '' ) );
+		$editor_content = wp_kses_post( (string) ( $args['editor_content'] ?? '' ) );
+
+		// Cap editor content to avoid excessive token usage, matching create_item().
+		$max_chars = max( 0, (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS ) );
+		if ( 0 === $max_chars ) {
+			$editor_content = '';
+		} elseif ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
+		}
+
+		$max_patterns = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
+
+		$patterns_prompt = '';
+		if ( $max_patterns > 0 ) {
+			$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
+			$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
+			$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
+			$patterns_prompt   = empty( $patterns ) ? '' : PatternCatalog::format_for_prompt( $patterns );
+		}
 
 		return Client::compose(
-			$args['prompt'] ?? '',
-			$args['editor_content'] ?? '',
+			$user_prompt,
+			$editor_content,
 			$catalog,
-			self::resolve_instructions( $post_id, $post_type )
+			self::resolve_instructions( $post_id, $post_type ),
+			$patterns_prompt
 		);
 	}
 
@@ -138,11 +195,13 @@ class ComposeController extends WP_REST_Controller {
 	 * Starts from the saved setting and passes it through the kratt_system_instructions
 	 * filter so that code can customise instructions per post type or context.
 	 *
+	 * @internal Shared with ReviewController. Not a stable public API.
+	 *
 	 * @param int    $post_id   The current post ID (0 if unsaved).
 	 * @param string $post_type The current post type (always available from the editor).
 	 * @return string
 	 */
-	private static function resolve_instructions( int $post_id, string $post_type ): string {
+	public static function resolve_instructions( int $post_id, string $post_type ): string {
 		$instructions = Settings::get_additional_instructions();
 
 		/**

@@ -24,6 +24,8 @@ The catalog is built from the WordPress block registry at activation time. It te
 ## Features
 
 - **Natural language composition** — describe layouts, sections, or single blocks in plain English
+- **Pattern-aware** — prefers registered block patterns when they match the request; falls back to assembling from individual blocks
+- **Content review** — analyses existing editor content and returns structured findings for structure, accessibility, and consistency
 - **Aware of all site blocks** — catalog is built from the live block registry, including theme and plugin blocks
 - **Cursor-aware insertion** — blocks are inserted after the currently selected block, or at the end of the document
 - **Nested block support** — containers (columns, groups, covers) are assembled with their inner blocks intact
@@ -31,6 +33,8 @@ The catalog is built from the WordPress block registry at activation time. It te
 - **Allowed blocks respected** — if the editor or post type restricts which blocks can be used, the AI only picks from that subset
 - **Collapsible message history** — recent messages are always visible; older ones are grouped under a toggle
 - **Test mode** — a `KRATT_TEST_MODE` constant lets you develop and style without burning API tokens
+
+![Kratt patterns and review](https://raw.githubusercontent.com/gsarig/kratt/main/.github/assets/kratt-patterns-review.png)
 
 ---
 
@@ -88,6 +92,20 @@ Type what you want to build in the text area and press **Enter** (or click **Gen
 Kratt inserts the generated blocks after the currently selected block. If nothing is selected, blocks are added at the end of the document.
 
 Shift+Enter adds a new line in the text area without submitting.
+
+### Review
+
+When the text area is empty, the **Review** button becomes available. Click it to ask Kratt to analyse the current editor content and return a list of findings grouped into three categories:
+
+- **Structure** — heading hierarchy, logical flow, appropriate block usage
+- **Accessibility** — missing alt text, non-descriptive link or button labels, heading level issues
+- **Consistency** — tone, terminology, and formatting patterns across the content
+
+[![Kratt patterns and review demo](https://img.youtube.com/vi/N6JiZHuFenk/maxresdefault.jpg)](https://www.youtube.com/watch?v=N6JiZHuFenk)
+
+*Click the image to watch the patterns and review demo on YouTube.*
+
+Each finding includes a short description of the issue and a concrete suggestion for fixing it. An empty findings list means no issues were detected.
 
 ---
 
@@ -209,6 +227,29 @@ add_filter( 'kratt_dummy_response', function( array $blocks, string $prompt ): a
 
 ---
 
+### `kratt_dummy_review_response`
+
+```php
+apply_filters( 'kratt_dummy_review_response', array $findings, string $editor_content )
+```
+
+Only fires when `KRATT_TEST_MODE` is `true`. Lets you override the findings returned by the dummy review response without editing the plugin — useful for testing how specific finding types are rendered in the sidebar.
+
+```php
+add_filter( 'kratt_dummy_review_response', function( array $findings, string $editor_content ): array {
+    return [
+        [
+            'type'       => 'accessibility',
+            'message'    => 'Image is missing alt text.',
+            'block_index' => 0,
+            'suggestion' => 'Add descriptive alt text for screen readers.',
+        ],
+    ];
+}, 10, 2 );
+```
+
+---
+
 ### `kratt_block_attribute_transform`
 
 ```php
@@ -238,9 +279,41 @@ Kratt ships a built-in handler for `ootb/openstreetmap`. See `CONTRIBUTING.md` f
 
 ---
 
+### `kratt_editor_content_max_chars`
+
+```php
+apply_filters( 'kratt_editor_content_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters of `editor_content` forwarded to the AI on both `/compose` and `/review` requests. The default is `8000`. Content exceeding this limit is truncated server-side and an ellipsis is appended.
+
+```php
+add_filter( 'kratt_editor_content_max_chars', function ( int $max ): int {
+    return 15000;
+} );
+```
+
+---
+
+### `kratt_block_snippet_max_chars`
+
+```php
+apply_filters( 'kratt_block_snippet_max_chars', int $max_chars )
+```
+
+Filters the maximum number of characters extracted per block when building the numbered editor summary sent to the AI. The default is `300`. Increase this if you need the AI to see more content per block; the server-side `kratt_editor_content_max_chars` cap still applies to the assembled summary as a whole.
+
+```php
+add_filter( 'kratt_block_snippet_max_chars', function ( int $max ): int {
+    return 500;
+} );
+```
+
+---
+
 ## REST API
 
-Kratt exposes two REST endpoints, both requiring authentication (`edit_posts` capability).
+Kratt exposes three REST endpoints, all requiring authentication (`edit_posts` capability).
 
 ### `POST /wp-json/kratt/v1/compose`
 
@@ -251,10 +324,10 @@ Generates blocks from a natural language prompt.
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `prompt` | string | yes | The user's natural language instruction |
-| `editor_content` | string | no | Serialized current editor content (read-only context) |
+| `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`), used as read-only context |
 | `allowed_blocks` | string[] | no | List of block slugs permitted in the editor |
 
-**Success response:**
+**Success response (blocks):**
 
 ```json
 {
@@ -262,6 +335,14 @@ Generates blocks from a natural language prompt.
     { "name": "core/heading", "attributes": { "level": 2, "content": "Hello" } },
     { "name": "core/paragraph", "attributes": { "content": "World." } }
   ]
+}
+```
+
+**Success response (pattern):** When the AI selects a registered block pattern, the serialized pattern markup is returned instead of a blocks array. The sidebar parses and inserts this directly.
+
+```json
+{
+  "pattern_content": "<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->"
 }
 ```
 
@@ -273,6 +354,40 @@ Generates blocks from a natural language prompt.
   "suggestion": "Try describing the content differently, or use a core/group to assemble it manually."
 }
 ```
+
+### `POST /wp-json/kratt/v1/review`
+
+Analyses the current editor content and returns structured feedback.
+
+**Request body:**
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `editor_content` | string | no | Serialized block markup for the current post content (HTML with WordPress block comments, as produced by `serialize( blocks )` from `@wordpress/blocks`). `block_index` values in the response refer to the zero-based position of top-level blocks in this markup. |
+| `focus` | string | no | Optional natural language focus for the review (e.g. "Check accessibility") |
+| `post_id` | integer | no | Current post ID (0 for unsaved posts) |
+| `post_type` | string | no | Current post type slug |
+
+**Success response:**
+
+```json
+{
+  "findings": [
+    {
+      "type": "accessibility",
+      "message": "Image block is missing alt text.",
+      "block_index": 2,
+      "suggestion": "Add descriptive alt text that conveys the image meaning."
+    }
+  ]
+}
+```
+
+`type` is one of `structure`, `accessibility`, or `consistency`. `block_index` is omitted when the finding applies to the content as a whole. An empty `findings` array means no issues were found.
+
+**Known limitation:** `editor_content` is capped at 8000 characters before being forwarded to the AI. Posts with very long content will be reviewed only partially, with no indication in the response that anything was truncated. This will be addressed in a future release.
+
+---
 
 ### `GET /wp-json/kratt/v1/catalog`
 

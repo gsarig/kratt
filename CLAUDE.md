@@ -38,10 +38,19 @@ and must be flagged before implementing:
 |------|------|---------|
 | `kratt_block_attribute_transform` | filter | Transform AI-output attributes before blocks reach the editor |
 | `kratt_dummy_response` | filter | Override test mode blocks without editing the plugin |
+| `kratt_dummy_review_response` | filter | Override test mode review findings without editing the plugin |
 | `kratt_system_instructions` | filter | Add or replace system prompt instructions per context |
+| `kratt_editor_content_max_chars` | filter | Override the server-side character cap on `editor_content` (default 8000) |
+| `kratt_block_snippet_max_chars` | filter | Override the per-block text snippet limit in the editor summary (default 300) |
+| `kratt_pattern_catalog_max` | filter | Override the maximum number of patterns included in the AI prompt (default 100) |
 
-REST endpoints are also public API: `POST /kratt/v1/compose`, `GET /kratt/v1/catalog`,
-`POST /kratt/v1/catalog/rescan`.
+REST endpoints are also public API: `POST /kratt/v1/compose`, `POST /kratt/v1/review`,
+`GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`.
+
+`POST /kratt/v1/compose` returns one of three shapes:
+- `{"blocks": [...]}` — success; blocks to insert
+- `{"pattern_content": "..."}` — success; serialized block markup from a registered pattern
+- `{"error": "...", "suggestion": "..."}` — failure; human-readable explanation
 
 ---
 
@@ -240,6 +249,78 @@ and block attributes is non-obvious, and there is no other way to resolve it.
 Edit `src/data/core-blocks.json`. Add entries only when the auto-derived description is
 inaccurate, a disambiguating hint is needed, or a realistic example improves AI output.
 Do not add entries without meaningful hints or curated attribute descriptions.
+
+### Catalog-gating for AI prompt data
+
+Any data source passed to the AI prompt that can result in block insertion must be
+filtered against the active (possibly `allowed_blocks`-filtered) catalog before the
+prompt is built. This applies to the block catalog itself, the pattern catalog, and
+anything similar added in the future.
+
+The pattern catalog learned this the hard way: patterns were included in the prompt
+without checking their block composition, so the AI could return a pattern containing
+blocks outside the `allowed_blocks` list, bypassing the editor's block restrictions.
+`PatternCatalog::filter_by_catalog()` is the reference implementation for the catalog
+check; `PatternCatalog::select_for_prompt()` is the reference for relevance-based
+capping before the prompt is built.
+
+### Never log raw AI payloads by default
+
+Never include raw AI request or response data in log messages by default. AI responses
+can embed editor content (the user's post text), which must not end up in server logs
+on production sites. Always gate raw payload logging behind `WP_DEBUG`:
+
+```php
+$msg = 'Kratt: something went wrong. JSON error: ' . json_last_error_msg();
+if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+    $msg .= '. Raw response: ' . substr( $response, 0, 500 );
+}
+error_log( $msg );
+```
+
+The error type and metadata are safe to log unconditionally; the payload is not.
+
+### Every AI entry point must mirror create_item() input handling
+
+`ComposeController::create_item()` is the reference implementation for input handling on the compose path. Any other entry point into the AI pipeline — currently `compose_from_ability()`, and any future equivalent — must apply the same steps in the same order:
+
+1. Cast and sanitize inputs (`sanitize_text_field()` for prompt, `wp_kses_post()` for `editor_content`)
+2. Validate post context (verify the post exists and the user can edit it; derive `post_type` from the post object)
+3. Cap `editor_content` via `kratt_editor_content_max_chars` (clamped to `>= 0`; treat `0` as empty)
+
+This rule was earned twice: post context validation was missing from `compose_from_ability()` in one round, and sanitization + capping were missing in the next. When adding a new entry point, check it line-by-line against `create_item()`.
+
+### Two block formats: never mix them
+
+There are two distinct block array formats in this codebase:
+
+- **AI response format** — produced by `json_decode()` on the AI output. Block names are
+  under the `name` key. Used by `filter_unknown_blocks()` and `apply_block_attribute_transforms()`.
+- **WordPress serialized format** — produced by `parse_blocks()`. Block names are under
+  the `blockName` key. Used by `PatternCatalog::filter_by_catalog()` and `all_blocks_in_catalog()`.
+
+Never pass `parse_blocks()` output to `filter_unknown_blocks()` or vice versa — the key
+mismatch causes silent failures where every block is treated as unknown. When working
+with parsed WP content, use `PatternCatalog::filter_by_catalog()`. When working with AI
+response blocks, use `filter_unknown_blocks()`.
+
+### Always type-guard WP_Block_Patterns_Registry output
+
+WordPress does not enforce field types on pattern registration. Both `get_registered()`
+and `get_all_registered()` return `mixed` for every field. Always apply explicit
+`is_string()` / `is_array()` checks before using any field value:
+
+```php
+$content = $pattern['content'] ?? '';
+if ( ! is_string( $content ) || '' === $content ) {
+    // skip or return error
+}
+```
+
+This rule was earned twice: once when `resolve_pattern()` lacked a content type check,
+and again when `get_patterns()` and `filter_by_catalog()` were missing guards on
+`description`, `name`, `categories`, and `keywords`. A missing guard causes a type
+error or silent wrong behavior at runtime.
 
 ### Ability name matching
 

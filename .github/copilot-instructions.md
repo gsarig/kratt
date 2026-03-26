@@ -40,8 +40,8 @@ Review for **correctness, security, and reliability** — in that order.
 
 The following are part of the plugin's public API. Any change to them is a **breaking change** and must be flagged explicitly:
 
-- PHP filter hooks: `kratt_block_attribute_transform`, `kratt_dummy_response`, `kratt_system_instructions`
-- REST endpoints: `POST /kratt/v1/compose`, `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`
+- PHP filter hooks: `kratt_block_attribute_transform`, `kratt_dummy_response`, `kratt_dummy_review_response`, `kratt_system_instructions`, `kratt_editor_content_max_chars`, `kratt_block_snippet_max_chars`, `kratt_pattern_catalog_max`
+- REST endpoints: `POST /kratt/v1/compose`, `POST /kratt/v1/review`, `GET /kratt/v1/catalog`, `POST /kratt/v1/catalog/rescan`
 
 ## Intentional design decisions
 
@@ -67,6 +67,34 @@ When `KRATT_TEST_MODE` is `true`, `Client::compose()` returns a deterministic du
 response instead of calling the AI. The `kratt_dummy_response` filter lets developers
 override which blocks the dummy returns — for example, to test a specific block's
 transform end-to-end without an API call. This is the intended testing pattern.
+
+### mb_* functions are always available
+
+WordPress core ships polyfills for all `mb_*` functions (`mb_strlen`, `mb_substr`, etc.)
+in `wp-includes/compat.php`, which is loaded unconditionally before any plugin code runs.
+Do not flag direct calls to `mb_strlen` or `mb_substr` as potentially unsafe or suggest
+`function_exists()` guards — they are guaranteed in any WordPress context.
+
+### editor_content uses serialized block markup for review
+
+`handleReview()` sends `serialize(blocks)` to `/kratt/v1/review`, not the plain-text
+`buildEditorContent()` summary. This is intentional: serialized markup includes full
+prose and HTML heading tags (`<h2>`, `<h3>`) so the AI can evaluate text quality
+alongside structure. The `block_index` field in findings still applies — the AI counts
+blocks in the serialized output to produce zero-based indices. Do not suggest switching
+back to `buildEditorContent()` for the review path.
+
+### wp_kses_post() is the correct sanitizer for editor_content
+
+Both `/kratt/v1/compose` and `/kratt/v1/review` sanitize `editor_content` with
+`wp_kses_post()`. Do not suggest `sanitize_textarea_field()`. The content sent is
+serialized WordPress block markup (HTML), and stripping tags would remove heading level
+information (`<h2>`, `<h3>`) that the AI needs. `wp_kses_post()` preserves the
+meaningful HTML structure while stripping unsafe content.
+
+### Filter-sourced integers are always clamped
+
+Any integer value obtained via `apply_filters()` is clamped before use (e.g. `max(0, (int) apply_filters(...))`) to guard against filter callbacks returning negative or zero values that would produce unexpected behaviour in functions like `mb_substr()` or `array_slice()`. Do not flag this pattern as redundant — it is deliberate. Clamping already exists on all filter-sourced integers in the codebase; if a new one appears without a clamp, that is worth flagging.
 
 ### Ability-to-block name matching
 
