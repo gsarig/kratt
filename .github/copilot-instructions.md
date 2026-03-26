@@ -92,6 +92,10 @@ serialized WordPress block markup (HTML), and stripping tags would remove headin
 information (`<h2>`, `<h3>`) that the AI needs. `wp_kses_post()` preserves the
 meaningful HTML structure while stripping unsafe content.
 
+### Filter-sourced integers are always clamped
+
+Any integer value obtained via `apply_filters()` is clamped before use (e.g. `max(0, (int) apply_filters(...))`) to guard against filter callbacks returning negative or zero values that would produce unexpected behaviour in functions like `mb_substr()` or `array_slice()`. Do not flag this pattern as redundant — it is deliberate. Clamping already exists on all filter-sourced integers in the codebase; if a new one appears without a clamp, that is worth flagging.
+
 ### Ability-to-block name matching
 
 Kratt resolves which block an ability belongs to by normalising both the ability namespace
