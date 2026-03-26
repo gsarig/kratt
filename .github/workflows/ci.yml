@@ -112,6 +112,7 @@ jobs:
           key: composer-v2-${{ runner.os }}-${{ hashFiles('**/composer.json', '**/composer.lock') }}
           restore-keys: |
             composer-v2-${{ runner.os }}-
+      - run: composer install --no-interaction --prefer-dist --no-progress
       - name: Resolve WordPress version
         id: wp-version
         run: |
