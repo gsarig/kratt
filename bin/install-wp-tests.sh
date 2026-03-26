@@ -24,7 +24,7 @@ download() {
   local url="$1" dest="$2"
   if command -v curl &> /dev/null; then
     local args=( -sL --fail )
-    if [[ -n "${GITHUB_TOKEN:-}" && "$url" == *"github.com"* ]]; then
+    if [[ -n "${GITHUB_TOKEN:-}" && ( "$url" == *"github.com"* || "$url" == *"githubusercontent.com"* ) ]]; then
       args+=( -H "Authorization: Bearer ${GITHUB_TOKEN}" )
     fi
     curl "${args[@]}" "$url" > "$dest"
