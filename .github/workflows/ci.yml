@@ -112,13 +112,23 @@ jobs:
           key: composer-v2-${{ runner.os }}-${{ hashFiles('**/composer.json', '**/composer.lock') }}
           restore-keys: |
             composer-v2-${{ runner.os }}-
+      - name: Resolve WordPress version
+        id: wp-version
+        run: |
+          if [[ "${{ matrix.wp-version }}" == "latest" ]]; then
+            VERSION=$(curl -s https://api.wordpress.org/core/version-check/1.7/ \
+              | grep -o '"version":"[^"]*"' | head -1 | cut -d'"' -f4)
+          else
+            VERSION="${{ matrix.wp-version }}"
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         id: wp-tests-cache
         with:
           path: |
             /tmp/wordpress
             /tmp/wordpress-tests-lib
-          key: wp-tests-${{ matrix.wp-version }}-${{ hashFiles('bin/install-wp-tests.sh') }}
+          key: wp-tests-${{ steps.wp-version.outputs.version }}-${{ hashFiles('bin/install-wp-tests.sh') }}
       - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ matrix.wp-version }}
         if: steps.wp-tests-cache.outputs.cache-hit != 'true'
         env:
