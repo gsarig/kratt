@@ -198,7 +198,11 @@ class PromptBuilderTest extends WP_UnitTestCase {
 		// The pattern-reference format should not appear in the Response Format section.
 		$response_format_pos = strpos( $prompt, '## Response Format' );
 		$rules_pos           = strpos( $prompt, '## Rules' );
-		$response_format     = substr( $prompt, (int) $response_format_pos, (int) $rules_pos - (int) $response_format_pos );
+
+		$this->assertNotFalse( $response_format_pos, 'Expected "## Response Format" heading in prompt.' );
+		$this->assertNotFalse( $rules_pos, 'Expected "## Rules" heading in prompt.' );
+
+		$response_format = substr( $prompt, (int) $response_format_pos, (int) $rules_pos - (int) $response_format_pos );
 
 		$this->assertStringNotContainsString( 'pattern-namespace/pattern-name', $response_format );
 	}
