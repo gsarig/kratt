@@ -117,7 +117,7 @@ class ComposeController extends WP_REST_Controller {
 		}
 
 		$instructions      = self::resolve_instructions( $post_id, $post_type );
-		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
+		$max_patterns      = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
 		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), (string) $prompt, $max_patterns * 2 );
 		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
 		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
@@ -155,7 +155,7 @@ class ComposeController extends WP_REST_Controller {
 
 		$user_prompt       = (string) ( $args['prompt'] ?? '' );
 		$editor_content    = (string) ( $args['editor_content'] ?? '' );
-		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
+		$max_patterns      = max( 0, (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS ) );
 		$preselected       = PatternCatalog::select_for_prompt( PatternCatalog::get_patterns(), $user_prompt, $max_patterns * 2 );
 		$filtered_patterns = PatternCatalog::filter_by_catalog( $preselected, $catalog );
 		$patterns          = array_slice( $filtered_patterns, 0, $max_patterns, true );
