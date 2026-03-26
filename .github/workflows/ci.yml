@@ -129,7 +129,7 @@ jobs:
             /tmp/wordpress
             /tmp/wordpress-tests-lib
           key: wp-tests-${{ steps.wp-version.outputs.version }}-${{ hashFiles('bin/install-wp-tests.sh') }}
-      - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ matrix.wp-version }}
+      - run: bash bin/install-wp-tests.sh wordpress_test wordpress wordpress 127.0.0.1 ${{ steps.wp-version.outputs.version }}
         if: steps.wp-tests-cache.outputs.cache-hit != 'true'
         env:
           WP_TESTS_DIR: /tmp/wordpress-tests-lib

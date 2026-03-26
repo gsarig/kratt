@@ -55,7 +55,7 @@ class Client {
 			return [ 'error' => __( 'The AI returned an unexpected response format.', 'kratt' ) ];
 		}
 
-		if ( isset( $decoded['pattern'] ) ) {
+		if ( '' !== $patterns_prompt && isset( $decoded['pattern'] ) ) {
 			if ( ! is_string( $decoded['pattern'] ) ) {
 				return [
 					'error'      => __( 'The AI returned an unexpected response format.', 'kratt' ),
