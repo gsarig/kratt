@@ -311,6 +311,22 @@ add_filter( 'kratt_block_snippet_max_chars', function ( int $max ): int {
 
 ---
 
+### `kratt_pattern_catalog_max`
+
+```php
+apply_filters( 'kratt_pattern_catalog_max', int $max_patterns )
+```
+
+Filters the maximum number of registered block patterns included in the AI prompt. The default is `100`. Reduce this if you have a large pattern library and want to limit token usage; set it to `0` to disable pattern-aware composition entirely.
+
+```php
+add_filter( 'kratt_pattern_catalog_max', function ( int $max ): int {
+    return 20;
+} );
+```
+
+---
+
 ## REST API
 
 Kratt exposes three REST endpoints, all requiring authentication (`edit_posts` capability).
