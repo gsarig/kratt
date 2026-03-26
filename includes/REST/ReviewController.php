@@ -36,11 +36,14 @@ class ReviewController extends WP_REST_Controller {
 							// delimiters (<!-- wp:... -->). Those are needed for accurate
 							// block_index values in AI findings. Extract them first, run
 							// wp_kses_post on the remainder, then restore.
+							// A UUID prefix makes each placeholder unique per request so
+							// user content cannot accidentally match a placeholder token.
+							$prefix    = 'KRATTBLK-' . wp_generate_uuid4() . '-';
 							$preserved = [];
 							$sanitized = preg_replace_callback(
 								'/<!--\s*\/?wp:[\s\S]*?-->/',
-								static function ( array $m ) use ( &$preserved ): string {
-									$key               = 'KRATTBLK' . count( $preserved ) . 'END';
+								static function ( array $m ) use ( &$preserved, $prefix ): string {
+									$key               = $prefix . count( $preserved );
 									$preserved[ $key ] = $m[0];
 									return $key;
 								},
@@ -110,8 +113,10 @@ class ReviewController extends WP_REST_Controller {
 		}
 
 		// Cap editor content to avoid excessive token usage, matching ComposeController.
-		$max_chars = (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS );
-		if ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+		$max_chars = max( 0, (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS ) );
+		if ( 0 === $max_chars ) {
+			$editor_content = '';
+		} elseif ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
 			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
 		}
 

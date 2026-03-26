@@ -96,8 +96,10 @@ class ComposeController extends WP_REST_Controller {
 		}
 
 		// Cap editor content to avoid excessive token usage.
-		$max_chars = (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS );
-		if ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
+		$max_chars = max( 0, (int) apply_filters( 'kratt_editor_content_max_chars', KRATT_EDITOR_CONTENT_MAX_CHARS ) );
+		if ( 0 === $max_chars ) {
+			$editor_content = '';
+		} elseif ( mb_strlen( $editor_content, 'UTF-8' ) > $max_chars ) {
 			$editor_content = mb_substr( $editor_content, 0, $max_chars, 'UTF-8' ) . '…';
 		}
 
