@@ -309,7 +309,7 @@ Generates blocks from a natural language prompt.
 | `editor_content` | string | no | Numbered plain-text block summary: one line per block (`[index] block/name: "text snippet"`), used as read-only context |
 | `allowed_blocks` | string[] | no | List of block slugs permitted in the editor |
 
-**Success response:**
+**Success response (blocks):**
 
 ```json
 {
@@ -317,6 +317,14 @@ Generates blocks from a natural language prompt.
     { "name": "core/heading", "attributes": { "level": 2, "content": "Hello" } },
     { "name": "core/paragraph", "attributes": { "content": "World." } }
   ]
+}
+```
+
+**Success response (pattern):** When the AI selects a registered block pattern, the serialized pattern markup is returned instead of a blocks array. The sidebar parses and inserts this directly.
+
+```json
+{
+  "pattern_content": "<!-- wp:paragraph --><p>Hello</p><!-- /wp:paragraph -->"
 }
 ```
 

@@ -143,6 +143,16 @@ class ComposeController extends WP_REST_Controller {
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
 		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
 
+		if ( $post_id > 0 ) {
+			$post = get_post( $post_id );
+			if ( ! $post || ! current_user_can( 'edit_post', $post_id ) ) {
+				$post_id   = 0;
+				$post_type = '';
+			} else {
+				$post_type = $post->post_type;
+			}
+		}
+
 		$user_prompt       = (string) ( $args['prompt'] ?? '' );
 		$editor_content    = (string) ( $args['editor_content'] ?? '' );
 		$max_patterns      = (int) apply_filters( 'kratt_pattern_catalog_max', KRATT_MAX_PATTERNS );
