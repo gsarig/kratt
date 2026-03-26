@@ -280,6 +280,16 @@ error_log( $msg );
 
 The error type and metadata are safe to log unconditionally; the payload is not.
 
+### Every AI entry point must mirror create_item() input handling
+
+`ComposeController::create_item()` is the reference implementation for input handling on the compose path. Any other entry point into the AI pipeline — currently `compose_from_ability()`, and any future equivalent — must apply the same steps in the same order:
+
+1. Cast and sanitize inputs (`sanitize_text_field()` for prompt, `wp_kses_post()` for `editor_content`)
+2. Validate post context (verify the post exists and the user can edit it; derive `post_type` from the post object)
+3. Cap `editor_content` via `kratt_editor_content_max_chars` (clamped to `>= 0`; treat `0` as empty)
+
+This rule was earned twice: post context validation was missing from `compose_from_ability()` in one round, and sanitization + capping were missing in the next. When adding a new entry point, check it line-by-line against `create_item()`.
+
 ### Two block formats: never mix them
 
 There are two distinct block array formats in this codebase:
