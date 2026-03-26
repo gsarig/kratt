@@ -117,13 +117,13 @@ function KrattSidebar() {
 						}
 					}
 					const text = raw.replace( /<[^>]+>/g, '' ).replace( /\s+/g, ' ' ).trim();
-					if ( text ) {
+					if ( text && BLOCK_SNIPPET_MAX_CHARS > 0 ) {
 						const snippet = text.length > BLOCK_SNIPPET_MAX_CHARS ? text.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : text;
 						const escaped = snippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
 						line += `: "${ escaped }"`;
 					}
 					const innerText = extractInnerText( block.innerBlocks );
-					if ( innerText ) {
+					if ( innerText && BLOCK_SNIPPET_MAX_CHARS > 0 ) {
 						const innerSnippet = innerText.length > BLOCK_SNIPPET_MAX_CHARS ? innerText.slice( 0, BLOCK_SNIPPET_MAX_CHARS ) + '…' : innerText;
 						const innerEscaped = innerSnippet.replace( /\\/g, '\\\\' ).replace( /"/g, '\\"' );
 						line += ` (contains: "${ innerEscaped }")`;
