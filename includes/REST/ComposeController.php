@@ -145,7 +145,7 @@ class ComposeController extends WP_REST_Controller {
 		}
 
 		$post_id   = isset( $args['post_id'] ) ? (int) $args['post_id'] : 0;
-		$post_type = isset( $args['post_type'] ) ? (string) $args['post_type'] : '';
+		$post_type = isset( $args['post_type'] ) ? sanitize_key( (string) $args['post_type'] ) : '';
 
 		if ( $post_id > 0 ) {
 			$post = get_post( $post_id );

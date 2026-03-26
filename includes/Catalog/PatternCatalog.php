@@ -123,7 +123,7 @@ class PatternCatalog {
 				$pattern['description'] ?? ''
 			);
 
-			$categories = $pattern['categories'] ?? [];
+			$categories = array_filter( is_array( $pattern['categories'] ?? null ) ? $pattern['categories'] : [], 'is_string' );
 			if ( ! empty( $categories ) ) {
 				$line .= "\n  Categories: " . implode( ', ', $categories );
 			}
@@ -175,8 +175,8 @@ class PatternCatalog {
 					$pattern['name'] ?? '',
 					$pattern['title'] ?? '',
 					$pattern['description'] ?? '',
-					implode( ' ', (array) ( $pattern['keywords'] ?? [] ) ),
-					implode( ' ', (array) ( $pattern['categories'] ?? [] ) ),
+					implode( ' ', array_filter( (array) ( $pattern['keywords'] ?? [] ), 'is_string' ) ),
+					implode( ' ', array_filter( (array) ( $pattern['categories'] ?? [] ), 'is_string' ) ),
 				]
 			)
 		);
