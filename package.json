@@ -10,5 +10,9 @@
   "devDependencies": {
     "@playwright/test": "^1.63.0",
     "@wordpress/scripts": "^31.7.0"
+  },
+  "overrides": {
+    "qs": "^6.16.0",
+    "postcss-selector-parser@^6": "^6.1.4"
   }
 }
