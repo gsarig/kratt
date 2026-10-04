@@ -58,6 +58,7 @@ Click **Rescan Blocks** on the Settings → Kratt page. The catalog is also rebu
 
 = 0.2.1 =
 * Security: updated build tooling dependencies to close npm advisories (no change to plugin behaviour).
+* Maintenance: Dependabot now groups minor and patch updates (no change to plugin behaviour).
 
 = 0.2.0 =
 * Content review: new Review button analyses existing editor content and returns structured findings (structure, accessibility, consistency) via a new `POST /kratt/v1/review` endpoint.
