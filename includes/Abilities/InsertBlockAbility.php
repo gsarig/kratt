@@ -6,6 +6,25 @@ namespace Kratt\Abilities;
 
 class InsertBlockAbility {
 
+	public const CATEGORY = 'kratt';
+
+	/**
+	 * Registers the ability category, which core requires before any ability can reference it.
+	 */
+	public static function register_category(): void {
+		if ( ! function_exists( 'wp_register_ability_category' ) ) {
+			return;
+		}
+
+		wp_register_ability_category(
+			self::CATEGORY,
+			[
+				'label'       => __( 'Kratt', 'kratt' ),
+				'description' => __( 'Block composition from natural language prompts.', 'kratt' ),
+			]
+		);
+	}
+
 	/**
 	 * Registers the kratt/insert-block ability with the WP Abilities API (WP 7.0+).
 	 * This makes the block insertion capability discoverable by other AI agents and MCP tools.
@@ -47,7 +66,8 @@ class InsertBlockAbility {
 						'suggestion' => [ 'type' => 'string' ],
 					],
 				],
-				'callback'            => [ \Kratt\REST\ComposeController::class, 'compose_from_ability' ],
+				'category'            => self::CATEGORY,
+				'execute_callback'    => [ \Kratt\REST\ComposeController::class, 'compose_from_ability' ],
 				'permission_callback' => static fn() => current_user_can( 'edit_posts' ),
 			]
 		);

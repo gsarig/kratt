@@ -27,6 +27,7 @@ class Plugin {
 	public function init(): void {
 		add_action( 'rest_api_init', [ $this, 'register_rest_routes' ] );
 		add_action( 'enqueue_block_editor_assets', [ Sidebar::class, 'enqueue' ] );
+		add_action( 'wp_abilities_api_categories_init', [ InsertBlockAbility::class, 'register_category' ] );
 		add_action( 'wp_abilities_api_init', [ InsertBlockAbility::class, 'register' ] );
 		add_action( 'admin_menu', [ $this, 'register_admin_menu' ] );
 		add_action( 'admin_init', [ $this, 'register_settings' ] );
