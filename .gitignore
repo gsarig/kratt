@@ -5,3 +5,6 @@
 *.DS_Store
 /.idea/
 .phpunit.result.cache
+/.env
+/test-results/
+/playwright-report/

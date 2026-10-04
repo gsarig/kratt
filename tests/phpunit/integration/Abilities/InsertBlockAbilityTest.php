@@ -24,6 +24,36 @@ class InsertBlockAbilityTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'kratt/insert-block', $abilities );
 	}
 
+	public function test_ability_is_registered_in_core_registry_with_category(): void {
+		if ( ! function_exists( 'wp_get_ability' ) ) {
+			$this->markTestSkipped( 'WordPress Abilities API not available.' );
+		}
+
+		$ability = wp_get_ability( 'kratt/insert-block' );
+
+		$this->assertNotNull( $ability );
+		$this->assertSame( InsertBlockAbility::CATEGORY, $ability->get_category() );
+		$this->assertNotNull( wp_get_ability_category( InsertBlockAbility::CATEGORY ) );
+	}
+
+	public function test_core_permission_check_requires_edit_posts(): void {
+		if ( ! function_exists( 'wp_get_ability' ) ) {
+			$this->markTestSkipped( 'WordPress Abilities API not available.' );
+		}
+
+		$ability = wp_get_ability( 'kratt/insert-block' );
+		$this->assertNotNull( $ability );
+
+		wp_set_current_user( 0 );
+		$this->assertFalse( $ability->check_permissions( [ 'prompt' => 'x' ] ) );
+
+		wp_set_current_user( $this->factory()->user->create( [ 'role' => 'subscriber' ] ) );
+		$this->assertFalse( $ability->check_permissions( [ 'prompt' => 'x' ] ) );
+
+		wp_set_current_user( $this->factory()->user->create( [ 'role' => 'contributor' ] ) );
+		$this->assertTrue( $ability->check_permissions( [ 'prompt' => 'x' ] ) );
+	}
+
 	public function test_ability_has_label(): void {
 		if ( ! function_exists( 'wp_register_ability' ) || ! function_exists( 'wp_list_abilities' ) ) {
 			$this->markTestSkipped( 'WordPress Abilities API not available.' );

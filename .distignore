@@ -6,7 +6,14 @@
 /src
 /tests
 /bin
+/scripts
+/docker
 /tmp
+/test-results
+/playwright-report
+/.env
+docker-compose.yml
+playwright.config.ts
 .distignore
 .gitignore
 .editorconfig

@@ -201,11 +201,8 @@ class BlockCatalog {
 			return $catalog;
 		}
 
-		// Ensure abilities are registered — fire the init action if it hasn't run yet.
-		if ( ! did_action( 'wp_abilities_api_init' ) ) {
-			do_action( 'wp_abilities_api_init' );
-		}
-
+		// Core's registry fires wp_abilities_api_init itself on first use. Firing it here
+		// as well nests a second run and registers every ability twice.
 		$abilities = wp_get_abilities();
 
 		foreach ( $abilities as $ability ) {

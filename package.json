@@ -8,6 +8,7 @@
     "lint:js": "wp-scripts lint-js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@wordpress/scripts": "^31.7.0"
   }
 }

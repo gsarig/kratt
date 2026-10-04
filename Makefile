@@ -1,4 +1,4 @@
-.PHONY: up down setup test lint phpunit update-snapshots build composer-install test-docker lint-docker phpunit-docker
+.PHONY: up down setup test lint phpunit update-snapshots build composer-install test-docker lint-docker phpunit-docker playwright
 
 WP_VERSION ?= latest
 
@@ -31,6 +31,10 @@ phpunit-docker: up composer-install
 
 composer-install:
 	docker compose run --rm composer install --no-interaction
+
+# Browser role tests against the Docker site; needs build/ (npm run build) first.
+playwright: setup
+	docker compose run --rm playwright npx playwright test
 
 # Run tests locally (requires composer and php installed)
 test:
