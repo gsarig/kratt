@@ -3,7 +3,7 @@ Contributors: gsarig
 Requires at least: 7.0
 Tested up to: 7.0
 Requires PHP: 8.1
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ Only blocks in the catalog. The AI is instructed never to invent block names, an
 Click **Rescan Blocks** on the Settings → Kratt page. The catalog is also rebuilt automatically when any plugin or theme is activated.
 
 == Changelog ==
+
+= 0.2.1 =
+* Security: updated build tooling dependencies to close npm advisories (no change to plugin behaviour).
 
 = 0.2.0 =
 * Content review: new Review button analyses existing editor content and returns structured findings (structure, accessibility, consistency) via a new `POST /kratt/v1/review` endpoint.
